@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Manga Healthcare",
+    "slug": "manga-healthcare",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "mangahealthcare",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#f8f3eb"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mangahealth.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f8f3eb"
+      },
+      "package": "com.mangahealth.app"
+    },
+    "plugins": ["expo-router"]
+  }
+}

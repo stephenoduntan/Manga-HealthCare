@@ -1,0 +1,249 @@
+// Prisma schema for MANGA HEALTHCARE (Beta Scope)
+// Follows exact Section 5 PRD data model and .antigravity/rules.md operational specifications
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  THERAPIST
+  LOCUM
+  ADMIN
+  PARTNER
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BookingType {
+  INSTANT_QUEUE
+  SCHEDULED
+  THERAPY_MANDATORY_SLOT
+}
+
+enum BookingStatus {
+  PENDING
+  IN_QUEUE
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REDIRECTED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum ConsultationMode {
+  VIDEO
+  AUDIO
+  CHAT
+}
+
+enum PayoutCycleStatus {
+  ACCRUED
+  PAID_BIWEEKLY
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  FLUTTERWAVE
+}
+
+enum PaymentRecordStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id                   String   @id @default(uuid()) @db.Uuid
+  public_id            String   @unique // Formatted as PAT-XXXX, DOC-XXXX, LOC-XXXX for ID+OTP login and Partner lookup
+  role                 Role
+  name                 String
+  phone                String   @unique
+  email                String?  @unique
+  auth_id              String   @unique // Firebase or Auth0 external identity ID
+  telemedicine_consent Boolean  @default(false)
+  ndpr_consent         Boolean  @default(false)
+  created_at           DateTime @default(now())
+
+  // Relations
+  patient_profile      PatientProfile?
+  doctor_profile       DoctorProfile?
+  patient_bookings     Booking[]              @relation("PatientBookings")
+  doctor_bookings      Booking[]              @relation("DoctorBookings")
+  availability_slots   AvailabilitySlot[]     @relation("DoctorSlots")
+  doctor_payments      Payment[]              @relation("DoctorPayments")
+  emergency_redirects  EmergencyRedirectLog[] @relation("PatientEmergencyRedirects")
+  audit_logs           AuditLog[]
+
+  @@map("users")
+}
+
+model PatientProfile {
+  id                   String    @id @default(uuid()) @db.Uuid
+  user_id              String    @unique @db.Uuid
+  date_of_birth        DateTime?
+  preferred_languages  String[]  @default(["English"])
+  allergies            Json?     // Structured allergies or medical text
+  existing_conditions  Json?     // Pre-existing conditions
+  current_medications  Json?     // Current drugs & supplements
+
+  user                 User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("patient_profiles")
+}
+
+model DoctorProfile {
+  id                     String             @id @default(uuid()) @db.Uuid
+  user_id                String             @unique @db.Uuid
+  specialty              String
+  is_locum               Boolean            @default(false)
+  mdcn_license_number    String             @unique // Mandatory MDCN license verification
+  medical_degree_details String             // Medical degree details and qualifications
+  verification_status    VerificationStatus @default(PENDING)
+  bio                    String?            @db.Text
+  languages              String[]           @default(["English"])
+  consultation_fee       Decimal            @db.Decimal(10, 2)
+  followup_fee           Decimal            @default(0.00) @db.Decimal(10, 2)
+
+  user                   User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("doctor_profiles")
+}
+
+model AvailabilitySlot {
+  id         String   @id @default(uuid()) @db.Uuid
+  doctor_id  String   @db.Uuid
+  start_time DateTime
+  end_time   DateTime
+  is_booked  Boolean  @default(false)
+
+  doctor     User     @relation("DoctorSlots", fields: [doctor_id], references: [id], onDelete: Cascade)
+  booking    Booking?
+
+  @@index([doctor_id, start_time])
+  @@map("availability_slots")
+}
+
+model Booking {
+  id             String        @id @default(uuid()) @db.Uuid
+  patient_id     String        @db.Uuid
+  doctor_id      String?       @db.Uuid // Nullable for instant queue until claimed by active doctor/locum
+  slot_id        String?       @unique @db.Uuid // Nullable for "Talk to Doctor Now" instant lobby
+  booking_type   BookingType
+  is_followup    Boolean       @default(false)
+  status         BookingStatus @default(PENDING)
+  triage_flagged Boolean       @default(false)
+  payment_status PaymentStatus @default(UNPAID)
+  created_at     DateTime      @default(now())
+
+  patient        User              @relation("PatientBookings", fields: [patient_id], references: [id], onDelete: Restrict)
+  doctor         User?             @relation("DoctorBookings", fields: [doctor_id], references: [id], onDelete: SetNull)
+  slot           AvailabilitySlot? @relation(fields: [slot_id], references: [id], onDelete: SetNull)
+  consultation   Consultation?
+  payments       Payment[]
+
+  @@index([patient_id])
+  @@index([doctor_id])
+  @@index([status])
+  @@map("bookings")
+}
+
+model Consultation {
+  id              String           @id @default(uuid()) @db.Uuid
+  booking_id      String           @unique @db.Uuid
+  start_time      DateTime?
+  end_time        DateTime?
+  mode            ConsultationMode @default(VIDEO)
+  notes           Json?            // Structured notes: { chief_complaint, history_of_present_illness, assessment, plan }
+  uploaded_images String[]         @default([]) // In-session images (rash photo, diagnostic images)
+  referral_note   String?          @db.Text
+  lab_requests    Json?            // Structured lab test requests
+  created_at      DateTime         @default(now())
+
+  booking         Booking          @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  prescriptions   Prescription[]
+
+  @@map("consultations")
+}
+
+model Prescription {
+  id                String       @id @default(uuid()) @db.Uuid
+  consultation_id   String       @db.Uuid
+  items             Json         // Array of { drug_name, dosage, frequency, duration, instructions }
+  generated_pdf_url String?      // Shareable / printable S3 encrypted PDF url
+  created_at        DateTime     @default(now())
+
+  consultation      Consultation @relation(fields: [consultation_id], references: [id], onDelete: Cascade)
+
+  @@index([consultation_id])
+  @@map("prescriptions")
+}
+
+model Payment {
+  id                  String              @id @default(uuid()) @db.Uuid
+  booking_id          String              @db.Uuid
+  doctor_id           String?             @db.Uuid
+  amount              Decimal             @db.Decimal(10, 2)
+  platform_commission Decimal             @db.Decimal(10, 2)
+  doctor_accrued_fee  Decimal             @db.Decimal(10, 2)
+  payout_cycle_status PayoutCycleStatus   @default(ACCRUED)
+  provider            PaymentProvider
+  provider_reference  String              @unique
+  status              PaymentRecordStatus @default(PENDING)
+  created_at          DateTime            @default(now())
+
+  booking             Booking             @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  doctor              User?               @relation("DoctorPayments", fields: [doctor_id], references: [id], onDelete: SetNull)
+
+  @@index([booking_id])
+  @@index([doctor_id])
+  @@index([payout_cycle_status])
+  @@map("payments")
+}
+
+model EmergencyRedirectLog {
+  id                     String   @id @default(uuid()) @db.Uuid
+  patient_id             String   @db.Uuid
+  symptoms_flagged       String[]
+  ambiguous_input        String?  @db.Text
+  clarification_response String?  @db.Text
+  timestamp              DateTime @default(now())
+  action_taken           String   @default("REDIRECTED_TO_EMERGENCY_AMBULANCE_112")
+
+  patient                User     @relation("PatientEmergencyRedirects", fields: [patient_id], references: [id], onDelete: Cascade)
+
+  @@index([patient_id])
+  @@index([timestamp])
+  @@map("emergency_redirect_log")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  user_id       String   @db.Uuid
+  action        String
+  target_record String
+  timestamp     DateTime @default(now())
+
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([timestamp])
+  @@index([target_record])
+  @@map("audit_log")
+}
