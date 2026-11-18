@@ -2,9 +2,11 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
 
+const TabsComponent = Tabs as any;
+
 export default function PatientTabsLayout() {
   return (
-    <Tabs
+    <TabsComponent
       screenOptions={{
         headerStyle: {
           backgroundColor: '#f8f3eb',
@@ -27,25 +29,25 @@ export default function PatientTabsLayout() {
         tabBarInactiveTintColor: '#747679',
       }}
     >
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="index"
         options={{
           title: 'Home',
           headerTitle: 'Manga Healthcare',
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🏠</Text>,
+          tabBarIcon: ({ color }: { color: string }) => <Text style={{ color, fontSize: 18 }}>🏠</Text>,
         }}
       />
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="triage"
         options={{
           title: 'Triage Gate',
           headerTitle: 'Safety Triage',
           tabBarLabel: 'Consult',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🩺</Text>,
+          tabBarIcon: ({ color }: { color: string }) => <Text style={{ color, fontSize: 18 }}>🩺</Text>,
         }}
       />
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="checkout"
         options={{
           title: 'Checkout',
@@ -53,23 +55,23 @@ export default function PatientTabsLayout() {
           href: null, // Hidden from tab bar; opened via navigation
         }}
       />
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="consultation/[id]"
         options={{
           title: 'Active Room',
           headerTitle: 'Consultation Room',
-          href: null,
+          href: null, // Hidden from tab bar; opened when call starts
         }}
       />
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="records"
         options={{
           title: 'Medical Records',
-          headerTitle: 'My Health Records & Rx',
+          headerTitle: 'My Records & Rx',
           tabBarLabel: 'Records',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📋</Text>,
+          tabBarIcon: ({ color }: { color: string }) => <Text style={{ color, fontSize: 18 }}>📄</Text>,
         }}
       />
-    </Tabs>
+    </TabsComponent>
   );
 }

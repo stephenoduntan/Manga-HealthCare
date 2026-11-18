@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@import "@manga/design-system/theme.css";
+
+:root {
+  --surface-canvas: #f8f3eb;
+  --surface-paper: #ffffff;
+  --surface-keylime: #e1f4df;
+  --surface-sage: #b1dbb8;
+  --surface-slate: #b6ced5;
+  --surface-cloud: #ebf0f8;
+  --surface-canopy: #0a3922;
+  --surface-peach-wash: #ffede8;
+
+  --ink-deep: #080331;
+  --ink-forest: #0f3e17;
+  --ink-charcoal: #222326;
+  --ink-body-gray: #747679;
+
+  --action-indigo: #4865ff;
+  --action-forest: #0f3e17;
+  --action-coral: #ff643b;
+
+  --metric-recovery-green: #31ce01;
+  --metric-blue: #415eee;
+  --metric-gold: #ffca00;
+}
+
+body {
+  background-color: var(--surface-canvas);
+  color: var(--ink-charcoal);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-feature-settings: "ss03" 1;
+  margin: 0;
+  padding: 0;
+}
+
+/* Enforce regular weight on editorial serif headings across the application */
+h1, h2, h3, .font-serif {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400 !important;
+  letter-spacing: -0.025em;
+}
+
+/* Eyebrow typography class */
+.eyebrow-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

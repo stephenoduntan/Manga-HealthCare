@@ -16,8 +16,8 @@ import {
 export default function AdminAnalyticsPage() {
   const metrics = {
     grossRevenueNgn: 3850000,
-    doctorPayoutsNgn: 2887500, // 75%
-    platformNetNgn: 962500, // 25%
+    doctorPayoutsNgn: 3080000, // 80% per PRD Section 7
+    platformNetNgn: 770000, // 20% platform margin
     completedConsultations: 385,
     followUpConversionRate: '38.4%',
     averageDoctorRating: '4.88 / 5.0',
@@ -27,7 +27,7 @@ export default function AdminAnalyticsPage() {
   const channelBreakdown = [
     { channel: 'General Physician Teleconsultation (₦10,000)', volume: 290, revenue: 2900000 },
     { channel: 'Mental Health Therapy Sessions (₦15,000)', volume: 45, revenue: 675000 },
-    { channel: '7-Day Follow-Up Review (₦5,000)', volume: 50, revenue: 250000 },
+    { channel: '14-Day Follow-Up Review (₦5,000)', volume: 50, revenue: 250000 },
   ];
 
   return (
@@ -63,18 +63,18 @@ export default function AdminAnalyticsPage() {
         {/* Doctor Payouts */}
         <div className="bg-[#e1f4df] p-6 rounded-3xl border border-[#b1dbb8] space-y-2">
           <span className="text-[11px] uppercase tracking-wider font-semibold text-[#0f3e17]">
-            Doctor Accrued Ledger (75%)
+            Doctor Accrued Ledger (80%)
           </span>
           <div className="text-3xl font-serif text-[#080331]">
             ₦{metrics.doctorPayoutsNgn.toLocaleString()}
           </div>
-          <p className="text-[11px] text-[#747679]">Settled biweekly on Fridays</p>
+          <p className="text-[11px] text-[#747679]">Settled biweekly on 1st & 15th</p>
         </div>
 
         {/* Platform Net */}
         <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-xs space-y-2">
           <span className="text-[11px] uppercase tracking-wider font-semibold text-[#080331]">
-            Platform Margin (25%)
+            Platform Margin (20%)
           </span>
           <div className="text-3xl font-serif text-[#080331]">
             ₦{metrics.platformNetNgn.toLocaleString()}
@@ -90,7 +90,7 @@ export default function AdminAnalyticsPage() {
           <div className="text-3xl font-serif text-[#080331]">
             {metrics.followUpConversionRate}
           </div>
-          <p className="text-[11px] text-[#747679]">Within 7 days of initial visit</p>
+          <p className="text-[11px] text-[#747679]">Within 14 days of initial visit</p>
         </div>
       </div>
 

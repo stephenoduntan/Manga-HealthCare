@@ -2,9 +2,11 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
 
+const TabsComponent = Tabs as any;
+
 export default function DoctorTabsLayout() {
   return (
-    <Tabs
+    <TabsComponent
       screenOptions={{
         headerStyle: {
           backgroundColor: '#f8f3eb',
@@ -27,33 +29,33 @@ export default function DoctorTabsLayout() {
         tabBarInactiveTintColor: '#747679',
       }}
     >
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="index"
         options={{
           title: 'Doctor Workspace',
           headerTitle: 'Doctor & Locum Portal',
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📊</Text>,
+          tabBarIcon: ({ color }: { color: string }) => <Text style={{ color, fontSize: 18 }}>📊</Text>,
         }}
       />
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="consultation/[id]"
         options={{
           title: 'Consultation & EHR',
           headerTitle: 'Active Clinical EHR',
           tabBarLabel: 'Consult Room',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🩺</Text>,
+          tabBarIcon: ({ color }: { color: string }) => <Text style={{ color, fontSize: 18 }}>🩺</Text>,
         }}
       />
-      <Tabs.Screen
+      <TabsComponent.Screen
         name="schedule"
         options={{
           title: 'Availability',
           headerTitle: 'Schedule & Slots',
           tabBarLabel: 'Schedule',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📅</Text>,
+          tabBarIcon: ({ color }: { color: string }) => <Text style={{ color, fontSize: 18 }}>📅</Text>,
         }}
       />
-    </Tabs>
+    </TabsComponent>
   );
 }
