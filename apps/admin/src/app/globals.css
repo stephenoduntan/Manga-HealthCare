@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@manga/design-system/theme.css";
+@source "../../../packages/design-system/src";
 
 :root {
   --surface-canvas: #f8f3eb;
