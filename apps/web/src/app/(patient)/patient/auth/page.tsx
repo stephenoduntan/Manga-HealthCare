@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight, CheckCircle2, Lock } from 'lucide-react';
@@ -11,9 +11,22 @@ export default function PatientAuthPage() {
   const [identifier, setIdentifier] = useState('+234 803 123 4567');
   const [fullName, setFullName] = useState('Amaka Adeleke');
   const [isNewUser, setIsNewUser] = useState(true);
+  const [intent, setIntent] = useState<'instant' | 'schedule' | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [verifiedPatientId, setVerifiedPatientId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qIntent = params.get('intent');
+    const qMode = params.get('mode');
+    if (qIntent === 'instant' || qIntent === 'schedule') {
+      setIntent(qIntent);
+    }
+    if (qMode === 'signup') {
+      setIsNewUser(true);
+    }
+  }, []);
 
   const handleRequestOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +44,8 @@ export default function PatientAuthPage() {
     setTimeout(() => {
       if (isNewUser && loginMode !== 'PATIENT_ID') {
         router.push('/patient/onboarding/consent');
+      } else if (intent) {
+        router.push(`/patient/triage?intent=${intent}`);
       } else {
         router.push('/patient/home');
       }

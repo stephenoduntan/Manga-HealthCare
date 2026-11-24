@@ -279,6 +279,57 @@ export default function AdminAnalyticsPage() {
           </table>
         </div>
       </div>
+
+      {/* Module 5.2: Biweekly Doctor Payout Ledger Export */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#efeeeb] shadow-[0_8px_20px_rgba(75,68,57,0.06)] space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="font-serif text-2xl text-[#080331] font-normal">
+              Biweekly Doctor Payout Ledger (doctor_accrued_fee)
+            </h3>
+            <p className="text-xs text-[#747679]">
+              Practitioner accrued balances queued for biweekly settlement execution.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => alert('Exported Biweekly Payout CSV for 1st/15th Bank Settlement Run.')}
+            className="bg-[#0a3922] text-white px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-[#0f3e17]"
+          >
+            Export Payout Ledger CSV
+          </button>
+        </div>
+
+        <div className="border border-neutral-200 rounded-2xl overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#e1f4df] text-[#0f3e17] font-semibold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="p-3.5">Practitioner ID</th>
+                <th className="p-3.5">Clinician Name</th>
+                <th className="p-3.5">Completed Visits</th>
+                <th className="p-3.5">Ledger Status</th>
+                <th className="p-3.5 text-right">Accrued Payout (NGN)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200 text-[#222326]">
+              <tr>
+                <td className="p-3.5 font-mono font-bold">LOC-9941</td>
+                <td className="p-3.5">Dr. Chidi Okafor (MDCN-78320)</td>
+                <td className="p-3.5 font-mono">28</td>
+                <td className="p-3.5"><span className="bg-[#ebf0f8] text-[#4865ff] px-2.5 py-0.5 rounded-full font-semibold text-[10px]">ACCRUED</span></td>
+                <td className="p-3.5 text-right font-mono font-bold">₦{formatNgn(210000)}</td>
+              </tr>
+              <tr>
+                <td className="p-3.5 font-mono font-bold">DOC-1102</td>
+                <td className="p-3.5">Dr. Folake Davies (MDCN-65110)</td>
+                <td className="p-3.5 font-mono">19</td>
+                <td className="p-3.5"><span className="bg-[#ebf0f8] text-[#4865ff] px-2.5 py-0.5 rounded-full font-semibold text-[10px]">ACCRUED</span></td>
+                <td className="p-3.5 text-right font-mono font-bold">₦{formatNgn(198750)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,18 @@
 /**
  * Centralized Multi-Subdomain & Route Resolution Helper
- * Matches MANGA HEALTHCARE Multi-Subdomain Architecture & Application Sitemap Section 1.
+ * Matches MANGA HEALTHCARE Master Ecosystem Topology (all 8 surfaces).
  * Deterministic on both SSR and Client (zero hydration drift).
  */
 
-export type PortalSurface = 'marketing' | 'patient' | 'doctor' | 'admin' | 'partner';
+export type PortalSurface =
+  | 'marketing'
+  | 'patient'
+  | 'doctor'
+  | 'admin'
+  | 'partner'
+  | 'help'
+  | 'blog'
+  | 'legal';
 
 const USE_SUBDOMAINS = process.env.NEXT_PUBLIC_USE_SUBDOMAINS === 'true';
 
@@ -14,6 +22,9 @@ const SUBDOMAIN_ORIGINS: Record<PortalSurface, string> = {
   doctor: process.env.NEXT_PUBLIC_DOCTOR_ORIGIN || 'https://doctor.mangahealthcare.com',
   admin: process.env.NEXT_PUBLIC_ADMIN_ORIGIN || 'http://localhost:3001',
   partner: process.env.NEXT_PUBLIC_PARTNER_ORIGIN || 'https://partner.mangahealthcare.com',
+  help: process.env.NEXT_PUBLIC_HELP_ORIGIN || 'https://help.mangahealthcare.com',
+  blog: process.env.NEXT_PUBLIC_BLOG_ORIGIN || 'https://blog.mangahealthcare.com',
+  legal: process.env.NEXT_PUBLIC_LEGAL_ORIGIN || 'https://legal.mangahealthcare.com',
 };
 
 const PATH_PREFIXES: Record<PortalSurface, string> = {
@@ -22,6 +33,9 @@ const PATH_PREFIXES: Record<PortalSurface, string> = {
   doctor: '/doctor',
   admin: '',
   partner: '/partner',
+  help: '/help',
+  blog: '/blog',
+  legal: '/legal',
 };
 
 /**

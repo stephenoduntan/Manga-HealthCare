@@ -76,12 +76,12 @@ export default function DoctorOnboardingPage() {
       setIsSubmitting(false);
       if (practitionerType === 'LOCUM') {
         alert(`Welcome Locum Doctor! ${locumIdInput} authenticated via OTP. Opening Doctor Workspace.`);
-        router.push('/doctor');
+        router.push('/doctor/dashboard');
       } else {
         alert(
           'MDCN Credentials submitted for Admin Verification!\nYour profile is created in PENDING status. Under Section 1.0 regulations, you cannot go live until an Admin verifies your MDCN license.\nOpening Workspace in preview mode.'
         );
-        router.push('/doctor');
+        router.push('/doctor/dashboard');
       }
     }, 1000);
   };

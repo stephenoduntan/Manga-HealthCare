@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * MANGA HEALTHCARE Multi-Subdomain Router (Section 1 Topology)
+ * MANGA HEALTHCARE Multi-Subdomain Ecosystem Router
  *
  * Maps subdomain requests transparently to role-isolated App Router groups:
- * - app.mangahealthcare.com / app.localhost      -> /patient/*
- * - doctor.mangahealthcare.com / doctor.localhost -> /doctor/*
+ * - app.mangahealthcare.com / app.localhost         -> /patient/*
+ * - doctor.mangahealthcare.com / doctor.localhost   -> /doctor/*
  * - partner.mangahealthcare.com / partner.localhost -> /partner/*
- * - mangahealthcare.com/portal/*                 -> /patient/*
+ * - help.mangahealthcare.com / help.localhost       -> /help/*
+ * - blog.mangahealthcare.com / blog.localhost       -> /blog/*
+ * - legal.mangahealthcare.com / legal.localhost     -> /legal/*
+ * - mangahealthcare.com/portal/*                    -> /patient/*
  */
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -15,7 +18,6 @@ export function middleware(request: NextRequest) {
   const hostname = (hostHeader.split(':')[0] ?? '').toLowerCase();
   const { pathname } = url;
 
-  // Skip Next.js internals & static assets
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -24,45 +26,28 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Main domain `/portal` alias -> `/patient` (Sitemap Section 1)
+  // Main domain `/portal` alias -> `/patient`
   if (pathname === '/portal' || pathname.startsWith('/portal/')) {
     url.pathname = pathname.replace(/^\/portal/, '/patient');
     return NextResponse.rewrite(url);
   }
 
-  // Subdomain: Patient Web App (app.mangahealthcare.com / app.localhost)
-  if (hostname.startsWith('app.')) {
-    if (!pathname.startsWith('/patient')) {
-      if (pathname === '/') {
-        url.pathname = '/patient/home';
-      } else {
-        url.pathname = `/patient${pathname}`;
-      }
-      return NextResponse.rewrite(url);
-    }
-  }
+  const subdomainPrefixMap: Array<{ prefix: string; target: string; rootTarget: string }> = [
+    { prefix: 'app.', target: '/patient', rootTarget: '/patient/home' },
+    { prefix: 'doctor.', target: '/doctor', rootTarget: '/doctor' },
+    { prefix: 'partner.', target: '/partner', rootTarget: '/partner' },
+    { prefix: 'help.', target: '/help', rootTarget: '/help' },
+    { prefix: 'blog.', target: '/blog', rootTarget: '/blog' },
+    { prefix: 'legal.', target: '/legal', rootTarget: '/legal' },
+  ];
 
-  // Subdomain: Doctor & Locum Portal (doctor.mangahealthcare.com / doctor.localhost)
-  if (hostname.startsWith('doctor.')) {
-    if (!pathname.startsWith('/doctor')) {
-      if (pathname === '/') {
-        url.pathname = '/doctor/dashboard';
-      } else {
-        url.pathname = `/doctor${pathname}`;
+  for (const rule of subdomainPrefixMap) {
+    if (hostname.startsWith(rule.prefix)) {
+      if (!pathname.startsWith(rule.target)) {
+        url.pathname = pathname === '/' ? rule.rootTarget : `${rule.target}${pathname}`;
+        return NextResponse.rewrite(url);
       }
-      return NextResponse.rewrite(url);
-    }
-  }
-
-  // Subdomain: Partner Fulfillment Portal (partner.mangahealthcare.com / partner.localhost)
-  if (hostname.startsWith('partner.')) {
-    if (!pathname.startsWith('/partner')) {
-      if (pathname === '/') {
-        url.pathname = '/partner/lookup';
-      } else {
-        url.pathname = `/partner${pathname}`;
-      }
-      return NextResponse.rewrite(url);
+      break;
     }
   }
 

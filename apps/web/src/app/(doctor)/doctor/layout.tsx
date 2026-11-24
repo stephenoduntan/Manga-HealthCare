@@ -3,17 +3,20 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  ShieldCheck,
-  Stethoscope,
-  Calendar,
-  DollarSign,
-  User,
-  Activity,
-  CheckCircle2,
-  Video,
-} from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { PersistentEmergencyBar } from '@manga/design-system';
+import { MarketingPageShell } from '../../../components/ecosystem/EcosystemChrome';
+
+const PUBLIC_DOCTOR_ROUTES = new Set([
+  '/doctor',
+  '/doctor/features',
+  '/doctor/how-it-works',
+  '/doctor/pricing',
+  '/doctor/getting-started',
+  '/doctor/about',
+  '/doctor/careers',
+  '/doctor/contact',
+]);
 
 export default function DoctorLayout({
   children,
@@ -25,6 +28,10 @@ export default function DoctorLayout({
   const [mdcnNumber] = useState('MDCN-78320');
   const [isAvailable, setIsAvailable] = useState(true);
 
+  if (pathname && PUBLIC_DOCTOR_ROUTES.has(pathname)) {
+    return <MarketingPageShell activeSurface="doctor">{children}</MarketingPageShell>;
+  }
+
   const navItems = [
     { label: 'Dashboard', href: '/doctor/dashboard' },
     { label: 'Schedule', href: '/doctor/schedule' },
@@ -35,11 +42,10 @@ export default function DoctorLayout({
 
   return (
     <div className="min-h-screen bg-[#f8f3eb] flex flex-col pb-16">
-      {/* Doctor Top Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#efeeeb] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/doctor" className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-full bg-[#0a3922] text-[#e1f4df] flex items-center justify-center font-serif text-lg">
                 M
               </div>
@@ -53,7 +59,6 @@ export default function DoctorLayout({
               </div>
             </Link>
 
-            {/* Navigation Tabs */}
             <nav className="hidden md:flex items-center gap-1 bg-[#f8f3eb] p-1 rounded-full border border-neutral-200/60">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
@@ -74,9 +79,7 @@ export default function DoctorLayout({
             </nav>
           </div>
 
-          {/* Right Header Badges */}
           <div className="flex items-center gap-3">
-            {/* Availability Toggle */}
             <div className="hidden sm:flex items-center gap-2 bg-[#f8f3eb] px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold">
               <span
                 className={`w-2.5 h-2.5 rounded-full ${
@@ -92,14 +95,12 @@ export default function DoctorLayout({
               </button>
             </div>
 
-            {/* MDCN Verified Badge */}
             <div className="flex items-center gap-1.5 bg-[#e1f4df] px-3 py-1.5 rounded-full border border-[#b1dbb8] text-xs font-semibold text-[#0f3e17]">
               <ShieldCheck className="w-3.5 h-3.5 text-[#31ce01]" />
               <span className="hidden sm:inline">MDCN Verified:</span>
               <span className="font-mono">{mdcnNumber}</span>
             </div>
 
-            {/* Doctor / Locum ID Badge */}
             <div className="flex items-center gap-2 bg-[#ebf0f8] px-3 py-1.5 rounded-full border border-[#4865ff]/20 text-xs">
               <span className="text-[#4865ff] font-semibold text-[10px] uppercase">Locum ID:</span>
               <strong className="font-mono text-[#080331]">{providerId}</strong>
@@ -108,12 +109,10 @@ export default function DoctorLayout({
         </div>
       </header>
 
-      {/* Main Content Area */}
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {children}
       </div>
 
-      {/* Persistent Emergency Hotline Bar */}
       <PersistentEmergencyBar
         position="bottom"
         message="Doctor Workspace Notice: In case of acute decompensation during remote call, trigger emergency 112 dispatch immediately:"

@@ -25,6 +25,7 @@ export function middleware(request: NextRequest) {
     '/verifications': '/doctors',
     '/admin/compliance': '/redirects',
     '/compliance': '/redirects',
+    '/admin/disputes': '/disputes',
     '/admin/analytics': '/analytics',
     '/admin/auth': '/auth',
   };

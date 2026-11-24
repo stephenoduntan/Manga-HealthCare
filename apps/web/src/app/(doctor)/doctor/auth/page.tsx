@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight, Stethoscope } from 'lucide-react';
@@ -11,6 +11,16 @@ export default function DoctorAuthPage() {
   const [identifier, setIdentifier] = useState('LOC-9941');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [isApplyMode, setIsApplyMode] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'apply') {
+      setIsApplyMode(true);
+      setAuthTab('EMAIL');
+      setIdentifier('dr.applicant@clinic.ng');
+    }
+  }, []);
 
   const handleRequestOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +32,11 @@ export default function DoctorAuthPage() {
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.trim().length < 6) return;
-    router.push('/doctor/dashboard');
+    if (isApplyMode) {
+      router.push('/doctor/onboarding/credentials');
+    } else {
+      router.push('/doctor/dashboard');
+    }
   };
 
   return (

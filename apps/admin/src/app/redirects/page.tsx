@@ -85,16 +85,34 @@ export default function AdminRedirectsLogPage() {
   return (
     <div className="w-full space-y-8">
       {/* Header */}
-      <div>
-        <span className="eyebrow-label text-[#0f3e17] bg-[#e1f4df] px-3 py-1 rounded-full border border-[#b1dbb8]">
-          PRD Section 1.0 & Section 6.0 Compliance Logs
-        </span>
-        <h1 className="font-serif text-3xl sm:text-4xl text-[#080331] font-normal mt-2">
-          Emergency Divert & NDPR Audit Ledgers
-        </h1>
-        <p className="text-xs sm:text-sm text-[#747679] mt-1">
-          Cryptographically timestamped audit trail proving compliance with Nigerian clinical safety mandates and Data Protection Regulations.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span className="eyebrow-label text-[#0f3e17] bg-[#e1f4df] px-3 py-1 rounded-full border border-[#b1dbb8]">
+            PRD Section 1.0 &amp; Section 6.0 Compliance Logs
+          </span>
+          <h1 className="font-serif text-3xl sm:text-4xl text-[#080331] font-normal mt-2">
+            Emergency Divert &amp; NDPR Audit Ledgers
+          </h1>
+          <p className="text-xs sm:text-sm text-[#747679] mt-1">
+            Cryptographically timestamped audit trail proving compliance with Nigerian clinical safety mandates and Data Protection Regulations.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => alert('Exported NDPR & MDCN Compliance CSV/PDF Report.')}
+            className="bg-[#0a3922] text-white px-4 py-2.5 rounded-full text-xs font-semibold hover:bg-[#0f3e17] transition"
+          >
+            Export CSV/PDF Report
+          </button>
+          <a
+            href={`${process.env.NEXT_PUBLIC_MARKETING_ORIGIN || 'http://localhost:3000'}/legal/ndpr-privacy`}
+            className="bg-white text-[#4865ff] border border-[#4865ff]/30 px-4 py-2.5 rounded-full text-xs font-semibold hover:bg-[#ebf0f8] transition"
+          >
+            legal.mangahealthcare.com →
+          </a>
+        </div>
       </div>
 
       {/* Tab Selector */}

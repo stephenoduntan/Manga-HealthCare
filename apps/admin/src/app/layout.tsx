@@ -36,11 +36,14 @@ export default function AdminRootLayout({
 }) {
   const pathname = usePathname();
 
+  const webOrigin = process.env.NEXT_PUBLIC_MARKETING_ORIGIN || 'http://localhost:3000';
+
   const navTabs = [
     { label: 'Live Ops', href: '/admin/live-ops', aliases: ['/', '/live-ops', '/admin', '/admin/live-ops'] },
     { label: 'Verifications', href: '/admin/verifications', aliases: ['/doctors', '/verifications', '/admin/verifications'] },
     { label: 'Compliance', href: '/admin/compliance', aliases: ['/redirects', '/compliance', '/admin/compliance'] },
-    { label: 'Analytics & Disputes', href: '/admin/analytics', aliases: ['/analytics', '/admin/analytics'] },
+    { label: 'Disputes', href: '/admin/disputes', aliases: ['/disputes', '/admin/disputes'] },
+    { label: 'Analytics', href: '/admin/analytics', aliases: ['/analytics', '/admin/analytics'] },
   ];
 
   return (
@@ -97,9 +100,13 @@ export default function AdminRootLayout({
                 <Lock className="w-3.5 h-3.5" />
                 <span>NDPR Audit Trail Active</span>
               </div>
-              <div className="bg-[#ff643b] px-3 py-1.5 rounded-full text-white font-mono font-bold">
-                ADM-001
-              </div>
+              <Link
+                href="/admin/auth"
+                className="bg-[#ff643b] px-3 py-1.5 rounded-full text-white font-mono font-bold hover:brightness-110 transition"
+                title="Switch Staff Role / RBAC Gate"
+              >
+                ADM-001 (Auth)
+              </Link>
             </div>
           </div>
         </header>
@@ -108,6 +115,18 @@ export default function AdminRootLayout({
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
           {children}
         </main>
+
+        {/* Module 6: Internal Ops Resources & Cross-Portal Links */}
+        <footer className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-8 pt-4 border-t border-[#0f3e17]/10 text-xs text-[#747679] flex flex-wrap items-center justify-between gap-4">
+          <span>Internal Governance Portal • admin.mangahealthcare.com</span>
+          <div className="flex flex-wrap items-center gap-4 font-medium">
+            <a href={`${webOrigin}/help`} className="hover:text-[#0a3922]">Support Queue (help)</a>
+            <a href={`${webOrigin}/legal/ndpr-privacy`} className="hover:text-[#0a3922]">NDPR Legal Hub</a>
+            <a href={webOrigin} className="hover:text-[#0a3922]">Patients Site</a>
+            <a href={`${webOrigin}/doctor`} className="hover:text-[#0a3922]">Doctors Site</a>
+            <a href={`${webOrigin}/partner`} className="hover:text-[#0a3922]">Partners Site</a>
+          </div>
+        </footer>
 
         {/* Persistent Emergency Hotline Bar */}
         <PersistentEmergencyBar

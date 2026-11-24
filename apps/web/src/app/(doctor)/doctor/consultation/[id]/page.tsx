@@ -116,7 +116,7 @@ export default function DoctorActiveConsultationPage() {
     alert(
       `Clinical Session Concluded!\n• auto-logged start_time: ${startTime}\n• auto-logged end_time: ${concludedAt}\n• Finalized SOAP Notes & E-Prescriptions linked to Patient Record ${patientInfo.id}.\nReturning to Doctor Workspace.`
     );
-    router.push('/doctor');
+    router.push('/doctor/dashboard');
   };
 
   const handleSaveSOAP = (data: SOAPData) => {
