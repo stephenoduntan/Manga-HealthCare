@@ -11,6 +11,10 @@ export interface DoctorPayoutBentoProps {
   verificationStatus?: 'VERIFIED' | 'PENDING' | 'REJECTED';
 }
 
+function formatCurrency(val: number): string {
+  return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function DoctorPayoutBento({
   doctorName = 'Dr. Chidi Okafor',
   providerId = 'LOC-8492',
@@ -23,190 +27,89 @@ export function DoctorPayoutBento({
   const cycleDaysTotal = 14;
   const cycleDaysCompleted = Math.max(0, cycleDaysTotal - daysUntilBiweeklyPayout);
   const cyclePercentage = Math.round((cycleDaysCompleted / cycleDaysTotal) * 100);
-  const strokeDashoffset = 283 - (283 * cyclePercentage) / 100;
+  const strokeDashoffset = Math.round(283 - (283 * cyclePercentage) / 100);
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
-      {/* Top Header Card */}
-      <div
-        style={{
-          backgroundColor: '#ebf0f8',
-          borderRadius: '24px',
-          padding: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-        }}
-      >
+      {/* Top Header Card in Cloud Wash */}
+      <div className="bg-[#ebf0f8] rounded-3xl p-6 sm:p-8 flex flex-col gap-6 border border-[#b6ced5]/40 shadow-[0_8px_20px_rgba(75,68,57,0.06)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#415eee',
-                  backgroundColor: '#ffffff',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[#415eee] bg-white px-2.5 py-0.5 rounded-full border border-[#415eee]/20">
                 Provider Ledger (Beta)
               </span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#0f3e17',
-                  backgroundColor: '#e1f4df',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[#0f3e17] bg-[#e1f4df] px-2.5 py-0.5 rounded-full border border-[#b1dbb8]">
                 MDCN: {verificationStatus}
               </span>
             </div>
-            <h2
-              style={{
-                fontFamily: "'DM Serif Display', 'Cormorant Garamond', Georgia, serif",
-                fontSize: '28px',
-                fontWeight: 400,
-                color: '#222326',
-                margin: '8px 0 2px 0',
-                letterSpacing: '-0.025em',
-              }}
-            >
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#222326] mt-2 mb-0.5 tracking-[-0.025em]">
               {doctorName}
             </h2>
-            <p style={{ fontSize: '13px', color: '#747679', margin: 0 }}>
-              Assigned ID: <strong style={{ color: '#222326' }}>{providerId}</strong> • Biweekly Automatic Settlement
+            <p className="text-xs text-[#747679] m-0">
+              Assigned ID: <strong className="text-[#222326]">{providerId}</strong> • Biweekly Automatic Settlement
             </p>
           </div>
 
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '12px 20px',
-              borderRadius: '16px',
-              border: '1px solid #efeeeb',
-            }}
-          >
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#747679', letterSpacing: '0.08em' }}>
+          <div className="bg-white px-5 py-3 rounded-2xl border border-[#efeeeb] self-start sm:self-auto shadow-xs">
+            <div className="text-[11px] uppercase text-[#747679] tracking-wider font-semibold">
               Cycle Frequency
             </div>
-            <div style={{ fontSize: '15px', fontWeight: 600, color: '#222326', marginTop: '2px' }}>
+            <div className="text-sm font-semibold text-[#222326] mt-0.5">
               Biweekly (Every 2nd Friday)
             </div>
           </div>
         </div>
 
         {/* 3-Column Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
           {/* Card 1: Accrued Fees */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '20px',
-              padding: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 4px 8px 0px',
-            }}
-          >
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#747679', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div className="bg-white rounded-2xl p-6 flex flex-col justify-between shadow-[0_4px_12px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
+            <span className="text-xs font-semibold text-[#747679] uppercase tracking-wider">
               Accrued Consultation Fees
             </span>
             <div className="my-3">
-              <span
-                style={{
-                  fontSize: '38px',
-                  fontWeight: 600,
-                  color: '#222326',
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1,
-                }}
-              >
-                ₦{accruedFeesNgn.toLocaleString()}
+              <span className="text-3xl sm:text-4xl font-semibold text-[#222326] tracking-[-0.03em] leading-none">
+                ₦{formatCurrency(accruedFeesNgn)}
               </span>
             </div>
-            <span style={{ fontSize: '12px', color: '#31ce01', fontWeight: 500 }}>
+            <span className="text-xs text-[#31ce01] font-medium flex items-center gap-1">
               ✓ Locked for next payout cycle
             </span>
           </div>
 
           {/* Card 2: Patients Seen */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '20px',
-              padding: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 4px 8px 0px',
-            }}
-          >
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#747679', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div className="bg-white rounded-2xl p-6 flex flex-col justify-between shadow-[0_4px_12px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
+            <span className="text-xs font-semibold text-[#747679] uppercase tracking-wider">
               Patients Consulted
             </span>
             <div className="my-3">
-              <span
-                style={{
-                  fontSize: '38px',
-                  fontWeight: 600,
-                  color: '#222326',
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1,
-                }}
-              >
+              <span className="text-3xl sm:text-4xl font-semibold text-[#222326] tracking-[-0.03em] leading-none">
                 {totalPatientsSeen}
               </span>
             </div>
-            <span style={{ fontSize: '12px', color: '#415eee', fontWeight: 500 }}>
+            <span className="text-xs text-[#415eee] font-medium">
               100% structured note compliance
             </span>
           </div>
 
           {/* Card 3: Payout Ring & Countdown */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '20px',
-              padding: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 4px 8px 0px',
-            }}
-          >
+          <div className="bg-white rounded-2xl p-6 flex items-center justify-between shadow-[0_4px_12px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#747679', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span className="text-xs font-semibold text-[#747679] uppercase tracking-wider">
                 Next Settlement
               </span>
-              <div
-                style={{
-                  fontSize: '32px',
-                  fontWeight: 600,
-                  color: '#222326',
-                  letterSpacing: '-0.03em',
-                  marginTop: '4px',
-                }}
-              >
+              <div className="text-2xl sm:text-3xl font-semibold text-[#222326] tracking-[-0.03em] mt-1">
                 {daysUntilBiweeklyPayout} days
               </div>
-              <span style={{ fontSize: '12px', color: '#747679' }}>
+              <span className="text-xs text-[#747679] mt-0.5 block">
                 {cyclePercentage}% cycle completed
               </span>
             </div>
 
             {/* Circular Ring SVG in Recovery Green */}
-            <div style={{ position: 'relative', width: '70px', height: '70px' }}>
-              <svg width="70" height="70" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+            <div className="relative w-[70px] h-[70px] shrink-0">
+              <svg width="70" height="70" viewBox="0 0 100 100" className="-rotate-90">
                 <circle
                   cx="50"
                   cy="50"
@@ -225,21 +128,10 @@ export function DoctorPayoutBento({
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
                   fill="none"
-                  style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                  className="transition-[stroke-dashoffset] duration-500 ease-out"
                 />
               </svg>
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#080331',
-                }}
-              >
+              <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-[#080331]">
                 {cyclePercentage}%
               </div>
             </div>

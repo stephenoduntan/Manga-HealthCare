@@ -20,34 +20,14 @@ export function PersistentEmergencyBar({
   return (
     <aside
       aria-label="Emergency Ambulance Hotlines"
-      style={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        [isTop ? 'top' : 'bottom']: 0,
-        zIndex: 50,
-        backgroundColor: '#0a3922',
-        color: '#ffffff',
-        borderTop: isTop ? 'none' : '1px solid rgba(255, 100, 59, 0.3)',
-        borderBottom: isTop ? '1px solid rgba(255, 100, 59, 0.3)' : 'none',
-        boxShadow: 'rgba(0, 0, 0, 0.2) 0px -4px 16px 0px',
-        padding: '12px 24px',
-      }}
+      className={`fixed left-0 right-0 z-50 bg-[#0a3922] text-white py-3 px-6 shadow-[0_-4px_16px_rgba(0,0,0,0.2)] ${
+        isTop ? 'top-0 border-b border-[#ff643b]/30' : 'bottom-0 border-t border-[#ff643b]/30'
+      }`}
     >
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
         <div className="flex items-center gap-2.5">
-          <span
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: '#ff643b',
-              boxShadow: '0 0 10px #ff643b',
-              display: 'inline-block',
-              flexShrink: 0,
-            }}
-          />
-          <p style={{ fontSize: '13px', color: '#f8f3eb', margin: 0, fontWeight: 400 }}>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#ff643b] shadow-[0_0_10px_#ff643b] inline-block shrink-0" />
+          <p className="text-[13px] text-[#f8f3eb] m-0 font-normal">
             {message}
           </p>
         </div>
@@ -55,38 +35,14 @@ export function PersistentEmergencyBar({
         <div className="flex items-center gap-3">
           <a
             href={`tel:${ambulanceNumber}`}
-            style={{
-              backgroundColor: '#ff643b',
-              color: '#ffffff',
-              padding: '8px 18px',
-              borderRadius: '9999px',
-              fontSize: '13px',
-              fontWeight: 600,
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: 'rgba(75, 68, 57, 0.2) 0px 4px 8px 0px',
-            }}
+            className="bg-[#ff643b] text-white py-2 px-4.5 rounded-full text-[13px] font-semibold no-underline inline-flex items-center gap-1.5 shadow-[0_4px_8px_rgba(75,68,57,0.2)] hover:brightness-110 transition"
           >
             <span>🚨 Call {ambulanceNumber}</span>
           </a>
 
           <a
             href={`tel:${lagosEmergencyNumber}`}
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.12)',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              padding: '7px 16px',
-              borderRadius: '9999px',
-              fontSize: '13px',
-              fontWeight: 500,
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
+            className="bg-white/12 text-white border border-white/30 py-1.5 px-4 rounded-full text-[13px] font-medium no-underline inline-flex items-center gap-1.5 hover:bg-white/20 transition"
           >
             <span>Ambulance ({lagosEmergencyNumber})</span>
           </a>

@@ -67,6 +67,10 @@ export default function PatientBookPage() {
     return 10000;
   };
 
+  const formatNgn = (val: number) => {
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
   // Evaluate Chief Complaint for Ambiguity
   const runEvaluation = (selectedCodes: string[]) => {
     const result = evaluateTriage({
@@ -515,7 +519,7 @@ export default function PatientBookPage() {
             <div className="text-right">
               <span className="text-xs text-[#747679] block">Total Amount Due</span>
               <span className="text-3xl font-serif text-[#080331] font-normal">
-                ₦{getFee().toLocaleString()}
+                ₦{formatNgn(getFee())}
               </span>
             </div>
           </div>
@@ -676,7 +680,7 @@ export default function PatientBookPage() {
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>Authorize ₦{getFee().toLocaleString()} & Enter Room</span>
+                  <span>Authorize ₦{formatNgn(getFee())} & Enter Room</span>
                 </>
               )}
             </button>

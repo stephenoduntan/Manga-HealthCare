@@ -44,8 +44,15 @@ export default function AdminRootLayout({
   ];
 
   return (
-    <html lang="en" className={`${dmSerif.variable} ${dmSans.variable}`}>
-      <body className="antialiased min-h-screen bg-[#f8f3eb] text-[#222326] font-sans flex flex-col pb-16">
+    <html
+      lang="en"
+      className={`${dmSerif.variable} ${dmSans.variable}`}
+      suppressHydrationWarning
+    >
+      <body
+        className="antialiased min-h-screen bg-[#f8f3eb] text-[#222326] font-sans flex flex-col pb-16"
+        suppressHydrationWarning
+      >
         {/* Admin Top Header */}
         <header className="sticky top-0 z-40 bg-[#0a3922] text-white border-b border-[#0f3e17]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">

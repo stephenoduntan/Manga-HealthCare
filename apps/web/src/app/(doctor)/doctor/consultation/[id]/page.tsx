@@ -45,10 +45,23 @@ export default function DoctorActiveConsultationPage() {
     chiefComplaint: 'Sore throat, fever (37.8C), and fatigue for 2 days',
   });
 
-  // Call Controls
+  // Call Controls & Telemetry
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [callDuration, setCallDuration] = useState(384); // seconds
+  const [startTime] = useState('14:02:10 WAT');
+  const [endTime, setEndTime] = useState<string | null>(null);
+
+  // Patient Uploaded Photos (PRD & Flowchart: Real-time clinical photo review)
+  const [patientUploadedPhotos, setPatientUploadedPhotos] = useState([
+    {
+      id: 'photo-01',
+      url: 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=400&q=80',
+      caption: 'Skin rash with erythematous papules on right forearm',
+      uploadedAt: '14:03 WAT',
+    },
+  ]);
+  const [activePhotoModal, setActivePhotoModal] = useState<string | null>(null);
 
   // Active EHR Tab on Right Column: 'SOAP' | 'PRESCRIPTION' | 'REFERRAL'
   const [activeEhrTab, setActiveEhrTab] = useState<'SOAP' | 'PRESCRIPTION' | 'REFERRAL'>('SOAP');
@@ -88,13 +101,22 @@ export default function DoctorActiveConsultationPage() {
     setChatMessages((prev) => [
       ...prev,
       {
-        id: Math.random().toString(),
+        id: `msg-${Date.now()}-${prev.length + 1}`,
         sender: 'DOCTOR',
         text: inputText.trim(),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
     setInputText('');
+  };
+
+  const handleConcludeCall = () => {
+    const concludedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WAT';
+    setEndTime(concludedAt);
+    alert(
+      `Clinical Session Concluded!\n• auto-logged start_time: ${startTime}\n• auto-logged end_time: ${concludedAt}\n• Finalized SOAP Notes & E-Prescriptions linked to Patient Record ${patientInfo.id}.\nReturning to Doctor Workspace.`
+    );
+    router.push('/doctor');
   };
 
   const handleSaveSOAP = (data: SOAPData) => {
@@ -149,6 +171,11 @@ export default function DoctorActiveConsultationPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 bg-[#e1f4df] px-3 py-1.5 rounded-full border border-[#b1dbb8] text-[11px] font-mono text-[#0f3e17]">
+            <Clock className="w-3.5 h-3.5" />
+            <span>start_time: {startTime}</span>
+          </div>
+
           <div className="flex items-center gap-1.5 bg-[#f8f3eb] px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-mono font-bold text-[#080331]">
             <Clock className="w-3.5 h-3.5 text-[#ff643b]" />
             <span>{formatTimer(callDuration)}</span>
@@ -211,6 +238,44 @@ export default function DoctorActiveConsultationPage() {
             </div>
           </div>
 
+          {/* Patient Uploaded Photos (PRD Flowchart: In-Session Photo Review) */}
+          <div className="bg-white rounded-3xl p-5 border border-[#efeeeb] shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <span className="eyebrow-label text-[#4865ff] bg-[#ebf0f8] px-2.5 py-0.5 rounded-full">
+                Patient Uploaded Observations ({patientUploadedPhotos.length})
+              </span>
+              <span className="text-[10px] text-[#747679]">Live In-Session Clinical Review</span>
+            </div>
+
+            <div className="space-y-2">
+              {patientUploadedPhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="p-3 rounded-2xl bg-[#f8f3eb] border border-neutral-200 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption}
+                      className="w-12 h-12 rounded-xl object-cover border border-neutral-300"
+                    />
+                    <div>
+                      <strong className="text-xs text-[#080331] block">{photo.caption}</strong>
+                      <span className="text-[10px] text-[#747679]">Uploaded at {photo.uploadedAt}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivePhotoModal(photo.url)}
+                    className="text-xs text-[#4865ff] font-semibold bg-white px-3 py-1.5 rounded-full border border-neutral-200 hover:bg-neutral-50 shadow-xs"
+                  >
+                    Inspect Photo
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Embedded Video/Audio Container */}
           <div className="relative aspect-4/3 bg-[#0a3922] rounded-3xl overflow-hidden shadow-md flex items-center justify-center border border-[#0f3e17]">
             {/* Patient Remote Camera Feed (Mock) */}
@@ -255,14 +320,11 @@ export default function DoctorActiveConsultationPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    alert('Encounter concluded. Return to Doctor Workspace.');
-                    router.push('/doctor');
-                  }}
-                  className="bg-[#ff643b] text-white px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-1 hover:brightness-110 transition"
+                  onClick={handleConcludeCall}
+                  className="bg-[#ff643b] text-white px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-1 hover:brightness-110 transition shadow-xs"
                 >
                   <PhoneOff className="w-3 h-3" />
-                  <span>Conclude Call</span>
+                  <span>Conclude Call & Lock SOAP</span>
                 </button>
               </div>
             </div>

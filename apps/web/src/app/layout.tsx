@@ -28,8 +28,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSerif.variable} ${dmSans.variable}`}>
-      <body className="antialiased min-h-screen bg-[#f8f3eb] text-[#222326] font-sans">
+    <html
+      lang="en"
+      className={`${dmSerif.variable} ${dmSans.variable}`}
+      suppressHydrationWarning
+    >
+      <body
+        className="antialiased min-h-screen bg-[#f8f3eb] text-[#222326] font-sans"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

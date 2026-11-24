@@ -28,6 +28,10 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Uploads & generated test artifacts
+apps/backend/uploads/
+!apps/backend/uploads/.gitkeep
+
 # Expo
 .expo/
 web-build/

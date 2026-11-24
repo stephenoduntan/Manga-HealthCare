@@ -14,6 +14,10 @@ import {
 } from 'lucide-react';
 
 export default function AdminAnalyticsPage() {
+  const formatNgn = (val: number) => {
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
   const metrics = {
     grossRevenueNgn: 3850000,
     doctorPayoutsNgn: 3080000, // 80% per PRD Section 7
@@ -53,7 +57,7 @@ export default function AdminAnalyticsPage() {
             Total Gross Revenue
           </span>
           <div className="text-3xl font-serif text-[#080331]">
-            ₦{metrics.grossRevenueNgn.toLocaleString()}
+            ₦{formatNgn(metrics.grossRevenueNgn)}
           </div>
           <span className="text-xs text-[#0f3e17] font-semibold flex items-center gap-1">
             <ArrowUpRight className="w-3.5 h-3.5" /> +24% vs previous cycle
@@ -66,7 +70,7 @@ export default function AdminAnalyticsPage() {
             Doctor Accrued Ledger (80%)
           </span>
           <div className="text-3xl font-serif text-[#080331]">
-            ₦{metrics.doctorPayoutsNgn.toLocaleString()}
+            ₦{formatNgn(metrics.doctorPayoutsNgn)}
           </div>
           <p className="text-[11px] text-[#747679]">Settled biweekly on 1st & 15th</p>
         </div>
@@ -77,7 +81,7 @@ export default function AdminAnalyticsPage() {
             Platform Margin (20%)
           </span>
           <div className="text-3xl font-serif text-[#080331]">
-            ₦{metrics.platformNetNgn.toLocaleString()}
+            ₦{formatNgn(metrics.platformNetNgn)}
           </div>
           <p className="text-[11px] text-[#747679]">Infrastructure & clinical ops</p>
         </div>
@@ -116,10 +120,10 @@ export default function AdminAnalyticsPage() {
                   <td className="p-3.5 font-medium">{row.channel}</td>
                   <td className="p-3.5 font-mono font-bold text-[#080331]">{row.volume}</td>
                   <td className="p-3.5 font-mono">
-                    ₦{(row.revenue / row.volume).toLocaleString()}
+                    ₦{formatNgn(Math.round(row.revenue / row.volume))}
                   </td>
                   <td className="p-3.5 text-right font-mono font-bold text-[#080331]">
-                    ₦{row.revenue.toLocaleString()}
+                    ₦{formatNgn(row.revenue)}
                   </td>
                 </tr>
               ))}

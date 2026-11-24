@@ -81,51 +81,16 @@ export function EmergencyTriageChecklist({
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
-      {/* Main Checklist Card on Paper White with Warm Cream Canvas context */}
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '16px',
-          padding: '32px',
-          boxShadow: 'rgba(75, 68, 57, 0.08) 0px 8px 16px 0px',
-          border: '1px solid #efeeeb',
-        }}
-      >
+      {/* Main Checklist Card on Paper White */}
+      <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-[0_8px_16px_rgba(75,68,57,0.08)] border border-[#efeeeb]">
         <div className="mb-6">
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: '#0f3e17',
-              backgroundColor: '#e1f4df',
-              padding: '4px 10px',
-              borderRadius: '9999px',
-              display: 'inline-block',
-            }}
-          >
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-[#0f3e17] bg-[#e1f4df] px-2.5 py-1 rounded-full inline-block border border-[#b1dbb8]">
             Clinical Safety Protocol — PRD Section 6.0
           </span>
-          <h2
-            style={{
-              fontFamily: "'DM Serif Display', 'Cormorant Garamond', Georgia, serif",
-              fontSize: '28px',
-              fontWeight: 400,
-              color: '#080331',
-              margin: '12px 0 6px 0',
-              letterSpacing: '-0.025em',
-            }}
-          >
+          <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#080331] my-3 tracking-[-0.025em]">
             Pre-Consultation Emergency Screening
           </h2>
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#747679',
-              lineHeight: '1.5',
-            }}
-          >
+          <p className="text-sm text-[#747679] leading-relaxed">
             To ensure patient safety, telemedicine consultations cannot proceed if acute emergency signs are present. Please check any symptoms you or the patient are currently experiencing:
           </p>
         </div>
@@ -139,58 +104,33 @@ export function EmergencyTriageChecklist({
                 key={symptom.code}
                 type="button"
                 onClick={() => toggleSymptom(symptom.code)}
-                style={{
-                  textAlign: 'left',
-                  padding: '14px 16px',
-                  borderRadius: '14px',
-                  border: isSelected ? '1.5px solid #ff643b' : '1px solid #efeeeb',
-                  backgroundColor: isSelected ? '#ffede8' : '#ffffff',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease-in-out',
-                }}
+                className={`text-left p-3.5 sm:p-4 rounded-xl flex items-start gap-3 transition-all cursor-pointer border ${
+                  isSelected
+                    ? 'border-[#ff643b] bg-[#ffede8]'
+                    : 'border-[#efeeeb] bg-white hover:border-neutral-300'
+                }`}
               >
                 <div
-                  style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '6px',
-                    border: isSelected ? '2px solid #ff643b' : '1.5px solid #747679',
-                    backgroundColor: isSelected ? '#ff643b' : '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    marginTop: '2px',
-                  }}
+                  className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 border text-xs font-bold transition-colors ${
+                    isSelected
+                      ? 'border-[#ff643b] bg-[#ff643b] text-white'
+                      : 'border-[#747679] bg-white'
+                  }`}
                 >
-                  {isSelected && (
-                    <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 700 }}>✓</span>
-                  )}
+                  {isSelected && <span>✓</span>}
                 </div>
                 <div>
                   <div
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: isSelected ? '#ff643b' : '#080331',
-                    }}
+                    className={`text-sm font-medium ${
+                      isSelected ? 'text-[#ff643b]' : 'text-[#080331]'
+                    }`}
                   >
-                    <span style={{ opacity: 0.6, marginRight: '6px', fontSize: '12px' }}>
+                    <span className="opacity-60 mr-1.5 text-xs">
                       0{idx + 1}.
                     </span>
                     {symptom.label}
                   </div>
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#747679',
-                      marginTop: '3px',
-                      lineHeight: '1.4',
-                    }}
-                  >
+                  <div className="text-xs text-[#747679] mt-1 leading-normal">
                     {symptom.description}
                   </div>
                 </div>
@@ -201,9 +141,9 @@ export function EmergencyTriageChecklist({
 
         {/* Triage Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#efeeeb]">
-          <span style={{ fontSize: '13px', color: '#747679' }}>
+          <span className="text-xs sm:text-sm text-[#747679]">
             {selectedCodes.length > 0 ? (
-              <strong style={{ color: '#ff643b' }}>
+              <strong className="text-[#ff643b]">
                 {selectedCodes.length} red-flag symptom{selectedCodes.length > 1 ? 's' : ''} selected
               </strong>
             ) : (
@@ -214,18 +154,11 @@ export function EmergencyTriageChecklist({
           <button
             type="button"
             onClick={handleEvaluate}
-            style={{
-              backgroundColor: selectedCodes.length > 0 ? '#ff643b' : '#0f3e17',
-              color: '#ffffff',
-              padding: '12px 28px',
-              borderRadius: '9999px',
-              fontSize: '15px',
-              fontWeight: 500,
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: 'rgba(75, 68, 57, 0.1) 0px 12px 24px 0px',
-              transition: 'background-color 0.2s',
-            }}
+            className={`px-7 py-3 rounded-full text-sm font-medium text-white transition-colors shadow-[0_8px_20px_rgba(75,68,57,0.1)] ${
+              selectedCodes.length > 0
+                ? 'bg-[#ff643b] hover:bg-[#e0532c]'
+                : 'bg-[#0f3e17] hover:bg-[#0a3922]'
+            }`}
           >
             {selectedCodes.length > 0
               ? 'Evaluate Symptoms (Emergency Halt)'
@@ -234,33 +167,15 @@ export function EmergencyTriageChecklist({
         </div>
       </div>
 
-      {/* Non-Dismissive Emergency Ambulance Redirect Modal / Banner (Peach Wash #ffede8) */}
+      {/* Non-Dismissive Emergency Ambulance Redirect Modal / Banner */}
       {isRedirectOpen && (
-        <div
-          style={{
-            backgroundColor: '#ffede8',
-            borderRadius: '16px',
-            padding: '28px',
-            border: '1.5px solid rgba(255, 100, 59, 0.4)',
-            boxShadow: 'rgba(75, 68, 57, 0.1) 0px 12px 24px 0px',
-          }}
-        >
+        <div className="bg-[#ffede8] rounded-2xl p-6 sm:p-7 border border-[#ff643b]/40 shadow-[0_12px_24px_rgba(75,68,57,0.1)]">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <span
-                style={{
-                  backgroundColor: '#ff643b',
-                  color: '#ffffff',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  padding: '4px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="bg-[#ff643b] text-white text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full">
                 EMERGENCY TRIAGE HALT
               </span>
-              <span style={{ fontSize: '13px', color: '#ff643b', fontWeight: 600 }}>
+              <span className="text-xs sm:text-sm text-[#ff643b] font-semibold">
                 Immediate In-Person Care Required
               </span>
             </div>
@@ -268,82 +183,34 @@ export function EmergencyTriageChecklist({
             <button
               type="button"
               onClick={() => setIsRedirectOpen(false)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#747679',
-                cursor: 'pointer',
-                fontSize: '13px',
-                textDecoration: 'underline',
-              }}
+              className="text-xs text-[#747679] hover:text-[#222326] underline cursor-pointer"
             >
               Dismiss Banner
             </button>
           </div>
 
-          <h3
-            style={{
-              fontFamily: "'DM Serif Display', 'Cormorant Garamond', Georgia, serif",
-              fontSize: '24px',
-              fontWeight: 400,
-              color: '#080331',
-              margin: '0 0 10px 0',
-              letterSpacing: '-0.025em',
-            }}
-          >
+          <h3 className="font-serif text-xl sm:text-2xl font-normal text-[#080331] mb-2.5 tracking-[-0.025em]">
             Your Safety is Paramount — Please Seek Emergency Services
           </h3>
 
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#080331',
-              lineHeight: '1.6',
-              marginBottom: '20px',
-              maxWidth: '650px',
-            }}
-          >
+          <p className="text-xs sm:text-sm text-[#080331] leading-relaxed mb-5 max-w-2xl">
             You reported acute symptoms that require immediate clinical stabilization at a hospital.
             Manga Healthcare is a remote telemedicine provider and cannot administer emergency acute resuscitation.
             Please use the persistent tap-to-call options below or proceed to the nearest emergency room immediately.
           </p>
 
           {/* Emergency Ambulance Hotlines */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <a
               href="tel:112"
-              style={{
-                backgroundColor: '#ff643b',
-                color: '#ffffff',
-                padding: '14px 24px',
-                borderRadius: '9999px',
-                fontSize: '16px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: 'rgba(75, 68, 57, 0.15) 0px 8px 16px 0px',
-              }}
+              className="bg-[#ff643b] hover:bg-[#e0532c] text-white px-6 py-3.5 rounded-full text-sm sm:text-base font-semibold inline-flex items-center gap-2 shadow-[0_8px_16px_rgba(75,68,57,0.15)] transition-colors"
             >
               <span>🚨 Tap to Call National Emergency (112)</span>
             </a>
 
             <a
               href="tel:767"
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#ff643b',
-                border: '1.5px solid #ff643b',
-                padding: '14px 24px',
-                borderRadius: '9999px',
-                fontSize: '15px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
+              className="bg-white hover:bg-neutral-50 text-[#ff643b] border border-[#ff643b] px-6 py-3.5 rounded-full text-sm sm:text-base font-semibold inline-flex items-center gap-2 transition-colors"
             >
               <span>🚑 Lagos Ambulance Hotline (767)</span>
             </a>

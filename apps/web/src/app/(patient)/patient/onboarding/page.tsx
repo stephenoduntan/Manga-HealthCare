@@ -25,6 +25,7 @@ export default function PatientOnboardingPage() {
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
 
   // Auth fields
+  const [loginMode, setLoginMode] = useState<'PHONE' | 'EMAIL' | 'PATIENT_ID'>('PHONE');
   const [identifier, setIdentifier] = useState('+234 803 123 4567');
   const [otpCode, setOtpCode] = useState('4829');
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -74,8 +75,8 @@ export default function PatientOnboardingPage() {
 
   const handleComplete = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!telemedicineConsent || !ndprConsent) {
-      alert('You must provide mandatory NDPR and Telemedicine consents to proceed.');
+    if (!telemedicineConsent || !ndprConsent || !termsAccepted) {
+      alert('You must provide mandatory NDPR Consent, Telemedicine Consent, and accept the Terms of Service & Disclaimer to proceed.');
       return;
     }
     router.push('/patient/book');
@@ -164,17 +165,78 @@ export default function PatientOnboardingPage() {
               />
             </div>
 
+            {/* Login Method Selector: Phone, Email, or Patient ID */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331]">
+                Sign In / Registration Method
+              </label>
+              <div className="grid grid-cols-3 gap-2 bg-[#f8f3eb] p-1 rounded-2xl border border-neutral-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode('PHONE');
+                    setIdentifier('+234 803 123 4567');
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-medium transition ${
+                    loginMode === 'PHONE'
+                      ? 'bg-[#0a3922] text-white shadow-xs font-semibold'
+                      : 'text-[#747679] hover:text-[#080331]'
+                  }`}
+                >
+                  📱 Phone Number
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode('EMAIL');
+                    setIdentifier('amaka.adeleke@healthmail.ng');
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-medium transition ${
+                    loginMode === 'EMAIL'
+                      ? 'bg-[#0a3922] text-white shadow-xs font-semibold'
+                      : 'text-[#747679] hover:text-[#080331]'
+                  }`}
+                >
+                  ✉️ Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode('PATIENT_ID');
+                    setIdentifier('PAT-48291');
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-medium transition ${
+                    loginMode === 'PATIENT_ID'
+                      ? 'bg-[#0a3922] text-white shadow-xs font-semibold'
+                      : 'text-[#747679] hover:text-[#080331]'
+                  }`}
+                >
+                  🆔 Patient ID
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1.5">
-                Nigerian Mobile Number or Email
+                {loginMode === 'PHONE'
+                  ? 'Nigerian Mobile Number (+234)'
+                  : loginMode === 'EMAIL'
+                  ? 'Email Address'
+                  : 'Patient ID (PAT-XXXX)'}
               </label>
               <div className="flex gap-2">
                 <input
-                  type="text"
+                  type={loginMode === 'EMAIL' ? 'email' : 'text'}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="+234 800 000 0000"
-                  className="flex-1 text-sm border border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
+                  placeholder={
+                    loginMode === 'PHONE'
+                      ? '+234 800 000 0000'
+                      : loginMode === 'EMAIL'
+                      ? 'you@example.com'
+                      : 'PAT-XXXX'
+                  }
+                  className="flex-1 text-sm border border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20 font-medium"
                 />
                 <button
                   type="button"

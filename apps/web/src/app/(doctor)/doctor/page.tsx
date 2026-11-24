@@ -24,6 +24,13 @@ import {
 export default function DoctorWorkspacePage() {
   const router = useRouter();
 
+  // MDCN License Verification Status (PRD Rule: Doctors cannot go live until verified)
+  const [verificationStatus, setVerificationStatus] = useState<'VERIFIED' | 'PENDING'>('VERIFIED');
+
+  const formatNgn = (val: number) => {
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
   // Incoming Lobby Queue (Patients waiting for a doctor)
   const [incomingQueue, setIncomingQueue] = useState([
     {
@@ -108,6 +115,17 @@ export default function DoctorWorkspacePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setVerificationStatus(verificationStatus === 'VERIFIED' ? 'PENDING' : 'VERIFIED')}
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition ${
+              verificationStatus === 'VERIFIED'
+                ? 'bg-[#e1f4df] text-[#0f3e17] border-[#b1dbb8]'
+                : 'bg-[#ffede8] text-[#ff643b] border-[#ff643b]/40'
+            }`}
+          >
+            MDCN Status: {verificationStatus === 'VERIFIED' ? '✓ Verified (Live)' : '⏳ Pending Approval (Hold)'}
+          </button>
           <Link
             href="/doctor/consultation/enc-live-01"
             className="bg-[#0a3922] text-white px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-[#0f3e17] transition shadow-xs flex items-center gap-2"
@@ -118,6 +136,21 @@ export default function DoctorWorkspacePage() {
         </div>
       </div>
 
+      {/* Profile Inactive Warning Banner when PENDING */}
+      {verificationStatus === 'PENDING' && (
+        <div className="bg-[#ffede8] p-5 rounded-3xl border border-[#ff643b]/40 shadow-xs flex items-start gap-4">
+          <AlertCircle className="w-6 h-6 text-[#ff643b] shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h3 className="font-serif text-lg text-[#080331]">
+              Profile Inactive: Pending Admin MDCN Verification
+            </h3>
+            <p className="text-xs text-[#747679] leading-relaxed">
+              Under Section 1.0 MDCN Telemedicine Regulations, doctors cannot go live or claim patients until an Admin reviews and approves your practicing license certificate. You will receive an email once your credentials have been verified.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Doctor Payout Bento Card (Design System Component) */}
       <DoctorPayoutBento
         doctorName="Dr. Chidi Okafor"
@@ -125,7 +158,7 @@ export default function DoctorWorkspacePage() {
         totalPatientsSeen={28}
         accruedFeesNgn={210000}
         daysUntilBiweeklyPayout={3}
-        verificationStatus="VERIFIED"
+        verificationStatus={verificationStatus}
       />
 
       {/* Live Incoming Patient Queue */}
@@ -179,11 +212,21 @@ export default function DoctorWorkspacePage() {
 
                 <button
                   type="button"
+                  disabled={verificationStatus === 'PENDING'}
                   onClick={() => handleClaimEncounter(item.id)}
-                  className="bg-[#ff643b] text-white px-6 py-3 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition shadow-xs flex items-center justify-center gap-2 shrink-0 active:scale-95"
+                  className={`px-6 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition shadow-xs flex items-center justify-center gap-2 shrink-0 active:scale-95 ${
+                    verificationStatus === 'PENDING'
+                      ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                      : 'bg-[#ff643b] text-white hover:brightness-105'
+                  }`}
+                  title={
+                    verificationStatus === 'PENDING'
+                      ? 'Cannot Go Live: MDCN license approval pending'
+                      : 'Claim Patient Consultation'
+                  }
                 >
                   <PhoneCall className="w-3.5 h-3.5" />
-                  <span>Claim Consultation</span>
+                  <span>{verificationStatus === 'PENDING' ? 'Verification Pending' : 'Claim Consultation'}</span>
                 </button>
               </div>
             ))}
@@ -247,7 +290,7 @@ export default function DoctorWorkspacePage() {
                   </td>
                   <td className="p-3.5 text-[#4865ff] font-medium">{enc.rxStatus}</td>
                   <td className="p-3.5 text-right font-mono font-bold text-[#080331]">
-                    ₦{enc.shareNgn.toLocaleString()}
+                    ₦{formatNgn(enc.shareNgn)}
                   </td>
                 </tr>
               ))}

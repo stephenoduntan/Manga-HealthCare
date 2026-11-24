@@ -135,12 +135,7 @@ export default function MarketingPage() {
           {/* Left Canopy Green Panel (#0a3922) */}
           <div className="lg:col-span-7 bg-[#0a3922] text-[#fffefc] p-8 md:p-14 flex flex-col justify-between relative overflow-hidden">
             {/* Background Ambient Radial Gradient */}
-            <div
-              className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none opacity-20"
-              style={{
-                background: 'radial-gradient(circle, #31ce01 0%, transparent 70%)',
-              }}
-            />
+            <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none opacity-20 bg-[radial-gradient(circle,#31ce01_0%,transparent_70%)]" />
 
             <div className="relative z-10 space-y-6">
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase text-[#d2f2e3] border border-white/10">

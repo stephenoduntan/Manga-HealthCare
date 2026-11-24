@@ -19,6 +19,11 @@ import {
 export default function DoctorOnboardingPage() {
   const router = useRouter();
 
+  // Practitioner Type State (Flowchart Section 2)
+  const [practitionerType, setPractitionerType] = useState<'STANDARD' | 'LOCUM'>('STANDARD');
+  const [locumIdInput, setLocumIdInput] = useState('LOC-9941');
+  const [locumOtp, setLocumOtp] = useState('4829');
+
   // Form State
   const [doctorName, setDoctorName] = useState('Dr. Chidi Okafor');
   const [email, setEmail] = useState('chidi.okafor@mangahealth.ng');
@@ -67,8 +72,15 @@ export default function DoctorOnboardingPage() {
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      alert('MDCN credentials submitted for verification! Temporary Locum ID LOC-9941 is active.');
-      router.push('/doctor');
+      if (practitionerType === 'LOCUM') {
+        alert(`Welcome Locum Doctor! ${locumIdInput} authenticated via OTP. Opening Doctor Workspace.`);
+        router.push('/doctor');
+      } else {
+        alert(
+          'MDCN Credentials submitted for Admin Verification!\nYour profile is created in PENDING status. Under Section 1.0 regulations, you cannot go live until an Admin verifies your MDCN license.\nOpening Workspace in preview mode.'
+        );
+        router.push('/doctor');
+      }
     }, 1000);
   };
 
@@ -87,6 +99,86 @@ export default function DoctorOnboardingPage() {
         </p>
       </div>
 
+      {/* Practitioner Type Switcher (Architecture Flowchart Section 2) */}
+      <div className="bg-white p-2 rounded-2xl border border-neutral-200 shadow-xs flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setPractitionerType('STANDARD')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${
+            practitionerType === 'STANDARD'
+              ? 'bg-[#0a3922] text-white shadow-xs'
+              : 'text-[#747679] hover:bg-neutral-50'
+          }`}
+        >
+          🩺 Standard Doctor / Therapist (MDCN License Submission)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setPractitionerType('LOCUM')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${
+            practitionerType === 'LOCUM'
+              ? 'bg-[#0a3922] text-white shadow-xs'
+              : 'text-[#747679] hover:bg-neutral-50'
+          }`}
+        >
+          ⚡ Locum Doctor (Admin-Issued LOC-XXXX ID + OTP)
+        </button>
+      </div>
+
+      {practitionerType === 'LOCUM' ? (
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-[#efeeeb] shadow-[0_8px_20px_rgba(75,68,57,0.06)] space-y-6">
+          <div className="border-b border-neutral-100 pb-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#4865ff] bg-[#ebf0f8] px-2.5 py-1 rounded-full">
+              Locum Fast-Track Authentication
+            </span>
+            <h2 className="font-serif text-2xl text-[#080331] font-normal mt-2">
+              Login with Admin-Issued Locum ID
+            </h2>
+            <p className="text-xs text-[#747679] mt-1">
+              Locum doctors credentials are vetted offline by Admin Ops. Enter your assigned LOC-XXXX identifier and temporary OTP.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
+                Assigned Locum ID (e.g. LOC-XXXX)
+              </label>
+              <input
+                type="text"
+                value={locumIdInput}
+                onChange={(e) => setLocumIdInput(e.target.value)}
+                placeholder="LOC-9941"
+                className="w-full text-sm font-mono font-bold border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
+                Verification OTP
+              </label>
+              <input
+                type="text"
+                value={locumOtp}
+                onChange={(e) => setLocumOtp(e.target.value)}
+                placeholder="4829"
+                className="w-full text-sm font-mono border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-[#ff643b] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition shadow-xs"
+          >
+            {isSubmitting ? 'Authenticating Locum...' : 'Authenticate & Enter Doctor Workspace'}
+          </button>
+        </form>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Professional Identity & MDCN Vetting */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#efeeeb] shadow-[0_8px_20px_rgba(75,68,57,0.06)] space-y-6">
@@ -330,11 +422,12 @@ export default function DoctorOnboardingPage() {
             disabled={isSubmitting}
             className="bg-[#0a3922] text-white px-8 py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-2 hover:bg-[#0f3e17] transition shadow-xs"
           >
-            <span>{isSubmitting ? 'Submitting...' : 'Save Profile & Enter Workspace'}</span>
+            <span>{isSubmitting ? 'Submitting Credentials...' : 'Submit MDCN Credentials for Verification'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

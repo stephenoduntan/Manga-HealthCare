@@ -18,147 +18,66 @@ export function TalkToDoctorLobbyCard({
   onScheduleSlot,
 }: TalkToDoctorLobbyCardProps) {
   return (
-    <div
-      style={{
-        backgroundColor: '#0a3922',
-        borderRadius: '24px',
-        padding: '36px',
-        color: '#ffffff',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: 'rgba(75, 68, 57, 0.12) 0px 16px 32px 0px',
-      }}
-      className="w-full max-w-3xl mx-auto"
-    >
+    <div className="bg-[#0a3922] rounded-3xl p-6 sm:p-9 text-white relative overflow-hidden shadow-[0_16px_32px_rgba(75,68,57,0.12)] w-full max-w-3xl mx-auto">
       {/* Background Subtle Wave Accent */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '-40px',
-          right: '-40px',
-          width: '240px',
-          height: '240px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(29, 191, 115, 0.15) 0%, rgba(10, 57, 34, 0) 70%)',
-          pointerEvents: 'none',
-        }}
-      />
+      <div className="absolute -top-10 -right-10 w-60 h-60 rounded-full bg-[radial-gradient(circle,rgba(29,191,115,0.15)_0%,rgba(10,57,34,0)_70%)] pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8">
         <div className="max-w-xl">
           {/* Status Eyebrow with Pulsing Beacon */}
           <div className="inline-flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase text-[#d2f2e3] mb-4">
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#31ce01',
-                boxShadow: '0 0 8px #31ce01',
-                display: 'inline-block',
-              }}
-            />
-            <span>Instant Lobby Active • {doctorsOnline} MDCN Doctors On Duty</span>
+            <span className="w-2 h-2 rounded-full bg-[#31ce01] shadow-[0_0_8px_#31ce01] inline-block" />
+            <span>Instant Lobby Active</span>
+            <span className="opacity-60">•</span>
+            <span>{doctorsOnline} Doctors On Duty</span>
           </div>
 
-          <h2
-            style={{
-              fontFamily: "'DM Serif Display', 'Cormorant Garamond', Georgia, serif",
-              fontSize: '34px',
-              fontWeight: 400,
-              lineHeight: '1.2',
-              color: '#ffffff',
-              margin: '0 0 10px 0',
-              letterSpacing: '-0.025em',
-            }}
-          >
+          <h2 className="font-serif text-3xl sm:text-4xl font-normal leading-tight tracking-[-0.025em] mb-2 text-white">
             Talk to a Licensed Doctor Now
           </h2>
 
-          <p
-            style={{
-              fontSize: '15px',
-              color: '#b1dbb8',
-              lineHeight: '1.5',
-              margin: 0,
-            }}
-          >
-            Skip the waiting room. Enter our digital lobby queue to consult an MDCN-certified general physician or locum in minutes via high-definition video, audio, or secure chat.
+          <p className="text-sm text-[#d2f2e3] leading-relaxed mb-6 max-w-md">
+            Connect immediately via encrypted video, voice, or low-bandwidth chat. Certified MDCN physicians ready for triage-cleared consultations.
           </p>
 
-          {/* Real-time queue metrics */}
-          <div className="flex items-center gap-6 mt-6 pt-6 border-t border-white/10">
-            <div>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#b1dbb8', letterSpacing: '0.08em' }}>
-                Current Queue Position
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: '#ffffff', letterSpacing: '-0.02em', marginTop: '2px' }}>
-                #{queuePosition} in line
-              </div>
+          {/* Real-Time Queue Telemetry Bento */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="bg-white/10 px-4 py-2.5 rounded-xl border border-white/10">
+              <span className="text-[11px] uppercase tracking-wider text-[#d2f2e3] block">
+                Queue Position
+              </span>
+              <span className="text-xl font-bold font-mono tracking-tight text-white">
+                #{queuePosition} in Line
+              </span>
             </div>
 
-            <div style={{ width: '1px', height: '36px', backgroundColor: 'rgba(255,255,255,0.15)' }} />
-
-            <div>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#b1dbb8', letterSpacing: '0.08em' }}>
-                Est. Connection Time
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: '#31ce01', letterSpacing: '-0.02em', marginTop: '2px' }}>
+            <div className="bg-white/10 px-4 py-2.5 rounded-xl border border-white/10">
+              <span className="text-[11px] uppercase tracking-wider text-[#d2f2e3] block">
+                Estimated Wait
+              </span>
+              <span className="text-xl font-bold font-mono tracking-tight text-[#ffca00]">
                 ~{estimatedWaitMinutes} mins
-              </div>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Action Controls: Coral Filled Button + Ghost Outline Button */}
-        <div className="flex flex-col gap-3.5 sm:min-w-[200px]">
+        {/* Action Controls */}
+        <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
           <button
             type="button"
             onClick={onJoinQueue}
-            style={{
-              backgroundColor: '#ff643b',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '9999px',
-              padding: '16px 28px',
-              fontSize: '16px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              textAlign: 'center',
-              boxShadow: 'rgba(75, 68, 57, 0.2) 0px 8px 16px 0px',
-              transition: 'transform 0.15s ease, filter 0.15s ease',
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.filter = 'brightness(1.05)')}
-            onMouseOut={(e) => (e.currentTarget.style.filter = 'brightness(1.0)')}
+            className="w-full md:w-auto bg-[#ff643b] hover:bg-[#e0532c] text-white px-7 py-3.5 rounded-full text-sm font-semibold tracking-wide uppercase transition-all shadow-[0_12px_24px_rgba(255,100,59,0.35)] cursor-pointer text-center"
           >
-            Enter Lobby Queue
+            Enter Queue (₦10,000)
           </button>
 
           <button
             type="button"
             onClick={onScheduleSlot}
-            style={{
-              backgroundColor: 'transparent',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              borderRadius: '9999px',
-              padding: '14px 28px',
-              fontSize: '15px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              textAlign: 'center',
-              transition: 'background-color 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.8)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-            }}
+            className="w-full md:w-auto bg-transparent hover:bg-white/10 text-white border border-white/30 px-7 py-3 rounded-full text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer text-center"
           >
-            Schedule for Later
+            Book Scheduled Slot
           </button>
         </div>
       </div>

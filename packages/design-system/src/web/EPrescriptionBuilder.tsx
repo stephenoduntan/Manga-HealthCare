@@ -28,7 +28,7 @@ export function EPrescriptionBuilder({
 }: EPrescriptionBuilderProps) {
   const [items, setItems] = useState<PrescriptionItem[]>([
     {
-      id: '1',
+      id: 'rx-item-1',
       drugName: 'Paracetamol Tablets',
       dosage: '1000mg (2 tabs)',
       frequency: 'Three times daily (TDS)',
@@ -36,7 +36,7 @@ export function EPrescriptionBuilder({
       instructions: 'Take after meals with water',
     },
     {
-      id: '2',
+      id: 'rx-item-2',
       drugName: 'Cetirizine Hydrochloride',
       dosage: '10mg',
       frequency: 'Once daily at night (OD)',
@@ -49,7 +49,7 @@ export function EPrescriptionBuilder({
     setItems((prev) => [
       ...prev,
       {
-        id: Math.random().toString(),
+        id: `rx-item-${Date.now()}-${prev.length + 1}`,
         drugName: '',
         dosage: '',
         frequency: '',
@@ -60,6 +60,7 @@ export function EPrescriptionBuilder({
   };
 
   const removeItem = (id: string) => {
+    if (items.length <= 1) return;
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -76,80 +77,30 @@ export function EPrescriptionBuilder({
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Slate Hush outer panel */}
-      <div
-        style={{
-          backgroundColor: '#b6ced5',
-          borderRadius: '24px',
-          padding: '32px',
-          boxShadow: 'rgba(75, 68, 57, 0.08) 0px 8px 24px 0px',
-        }}
-      >
+      <div className="bg-[#b6ced5] rounded-3xl p-8 shadow-[0_8px_24px_rgba(75,68,57,0.08)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2">
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#4865ff',
-                  backgroundColor: '#ffffff',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[#4865ff] bg-white py-1 px-2.5 rounded-full">
                 E-Prescription Module (PRD Section 4.6)
               </span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#0f3e17',
-                  backgroundColor: '#e1f4df',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[#0f3e17] bg-[#e1f4df] py-1 px-2.5 rounded-full">
                 Signed by {doctorName} ({mdcnNumber})
               </span>
             </div>
 
-            <h2
-              style={{
-                fontFamily: "'DM Serif Display', 'Cormorant Garamond', Georgia, serif",
-                fontSize: '28px',
-                fontWeight: 400,
-                color: '#080331',
-                margin: '8px 0 2px 0',
-                letterSpacing: '-0.025em',
-              }}
-            >
+            <h2 className="font-serif text-3xl font-normal text-[#080331] mt-2 mb-0.5 tracking-tight">
               Digital Prescription & Pharmacy Order
             </h2>
-            <p style={{ fontSize: '13px', color: '#080331', opacity: 0.8, margin: 0 }}>
-              Rx for <strong style={{ color: '#080331' }}>{patientName}</strong> • Patient ID: <strong>{patientId}</strong>
+            <p className="text-[13px] text-[#080331]/80 m-0">
+              Rx for <strong className="text-[#080331]">{patientName}</strong> • Patient ID: <strong>{patientId}</strong>
             </p>
           </div>
 
           <button
             type="button"
             onClick={addItem}
-            style={{
-              backgroundColor: '#ffffff',
-              color: '#080331',
-              border: '1px solid rgba(8, 3, 49, 0.15)',
-              padding: '10px 20px',
-              borderRadius: '9999px',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
+            className="bg-white text-[#080331] border border-[#080331]/15 py-2.5 px-5 rounded-full text-sm font-medium cursor-pointer inline-flex items-center gap-1.5 hover:bg-neutral-50 transition"
           >
             <span>+ Add Medication</span>
           </button>
@@ -160,23 +111,10 @@ export function EPrescriptionBuilder({
           {items.map((item, index) => (
             <div
               key={item.id}
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '14px',
-                padding: '18px 22px',
-                boxShadow: 'rgba(75, 68, 57, 0.04) 0px 2px 6px 0px',
-              }}
+              className="bg-white rounded-2xl p-5 shadow-[0_2px_6px_rgba(75,68,57,0.04)]"
             >
               <div className="flex items-center justify-between mb-3">
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#0f3e17',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
+                <span className="text-xs font-semibold text-[#0f3e17] uppercase tracking-wider">
                   Rx #{index + 1}
                 </span>
 
@@ -184,14 +122,7 @@ export function EPrescriptionBuilder({
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#ff643b',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                    }}
+                    className="bg-transparent border-0 text-[#ff643b] text-xs cursor-pointer font-medium hover:underline"
                   >
                     Remove
                   </button>
@@ -200,7 +131,7 @@ export function EPrescriptionBuilder({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#747679', marginBottom: '4px' }}>
+                  <label className="block text-[11px] text-[#747679] mb-1">
                     Drug / Generic Name
                   </label>
                   <input
@@ -208,19 +139,12 @@ export function EPrescriptionBuilder({
                     value={item.drugName}
                     onChange={(e) => updateItem(item.id, 'drugName', e.target.value)}
                     placeholder="e.g. Amoxicillin"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #efeeeb',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
+                    className="w-full py-2 px-3 rounded-lg border border-[#efeeeb] text-[13px] outline-hidden focus:border-[#4865ff] transition"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#747679', marginBottom: '4px' }}>
+                  <label className="block text-[11px] text-[#747679] mb-1">
                     Dosage & Strength
                   </label>
                   <input
@@ -228,19 +152,12 @@ export function EPrescriptionBuilder({
                     value={item.dosage}
                     onChange={(e) => updateItem(item.id, 'dosage', e.target.value)}
                     placeholder="e.g. 500mg"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #efeeeb',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
+                    className="w-full py-2 px-3 rounded-lg border border-[#efeeeb] text-[13px] outline-hidden focus:border-[#4865ff] transition"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#747679', marginBottom: '4px' }}>
+                  <label className="block text-[11px] text-[#747679] mb-1">
                     Frequency
                   </label>
                   <input
@@ -248,19 +165,12 @@ export function EPrescriptionBuilder({
                     value={item.frequency}
                     onChange={(e) => updateItem(item.id, 'frequency', e.target.value)}
                     placeholder="e.g. TDS (3x daily)"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #efeeeb',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
+                    className="w-full py-2 px-3 rounded-lg border border-[#efeeeb] text-[13px] outline-hidden focus:border-[#4865ff] transition"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#747679', marginBottom: '4px' }}>
+                  <label className="block text-[11px] text-[#747679] mb-1">
                     Duration
                   </label>
                   <input
@@ -268,14 +178,7 @@ export function EPrescriptionBuilder({
                     value={item.duration}
                     onChange={(e) => updateItem(item.id, 'duration', e.target.value)}
                     placeholder="e.g. 5 days"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #efeeeb',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
+                    className="w-full py-2 px-3 rounded-lg border border-[#efeeeb] text-[13px] outline-hidden focus:border-[#4865ff] transition"
                   />
                 </div>
               </div>
@@ -286,15 +189,7 @@ export function EPrescriptionBuilder({
                   value={item.instructions}
                   onChange={(e) => updateItem(item.id, 'instructions', e.target.value)}
                   placeholder="Specific patient instructions (e.g. take with a glass of warm water after food)"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #efeeeb',
-                    fontSize: '12px',
-                    color: '#747679',
-                    outline: 'none',
-                  }}
+                  className="w-full py-2 px-3 rounded-lg border border-[#efeeeb] text-xs text-[#747679] outline-hidden focus:border-[#4865ff] transition"
                 />
               </div>
             </div>
@@ -303,25 +198,14 @@ export function EPrescriptionBuilder({
 
         {/* Generate Action */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-black/10">
-          <span style={{ fontSize: '12px', color: '#080331', opacity: 0.8 }}>
+          <span className="text-xs text-[#080331]/80">
             Generates verifiable, encrypted-at-rest PDF e-prescription with QR security key for partner pharmacies.
           </span>
 
           <button
             type="button"
             onClick={handleGenerate}
-            style={{
-              backgroundColor: '#4865ff',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '9999px',
-              padding: '14px 28px',
-              fontSize: '15px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: 'rgba(75, 68, 57, 0.1) 0px 12px 24px 0px',
-              whiteSpace: 'nowrap',
-            }}
+            className="bg-[#4865ff] text-white border-0 rounded-full py-3.5 px-7 text-[15px] font-semibold cursor-pointer shadow-[0_12px_24px_rgba(75,68,57,0.1)] whitespace-nowrap hover:brightness-105 active:scale-95 transition"
           >
             Generate & Sign PDF E-Prescription
           </button>

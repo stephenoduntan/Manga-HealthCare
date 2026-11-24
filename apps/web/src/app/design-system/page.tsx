@@ -71,7 +71,7 @@ export default function DesignSystemShowcasePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {/* Swatch 1: Warm Cream Canvas */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl border border-neutral-200" style={{ backgroundColor: '#f8f3eb' }} />
+              <div className="w-full h-16 rounded-xl border border-neutral-200 bg-[#f8f3eb]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Warm Cream Canvas</div>
                 <div className="text-[11px] font-mono text-[#747679]">#f8f3eb</div>
@@ -81,7 +81,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 2: Paper White */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl border border-neutral-200" style={{ backgroundColor: '#ffffff' }} />
+              <div className="w-full h-16 rounded-xl border border-neutral-200 bg-[#ffffff]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Paper White</div>
                 <div className="text-[11px] font-mono text-[#747679]">#ffffff</div>
@@ -91,7 +91,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 3: Keylime Wash */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#e1f4df' }} />
+              <div className="w-full h-16 rounded-xl bg-[#e1f4df]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Keylime Wash</div>
                 <div className="text-[11px] font-mono text-[#747679]">#e1f4df</div>
@@ -101,7 +101,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 4: Sage Mist */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#b1dbb8' }} />
+              <div className="w-full h-16 rounded-xl bg-[#b1dbb8]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Sage Mist</div>
                 <div className="text-[11px] font-mono text-[#747679]">#b1dbb8</div>
@@ -111,7 +111,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 5: Slate Hush */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#b6ced5' }} />
+              <div className="w-full h-16 rounded-xl bg-[#b6ced5]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Slate Hush</div>
                 <div className="text-[11px] font-mono text-[#747679]">#b6ced5</div>
@@ -121,7 +121,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 6: Cloud Card */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#ebf0f8' }} />
+              <div className="w-full h-16 rounded-xl bg-[#ebf0f8]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Cloud Card</div>
                 <div className="text-[11px] font-mono text-[#747679]">#ebf0f8</div>
@@ -131,7 +131,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 7: Canopy Green */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#0a3922' }} />
+              <div className="w-full h-16 rounded-xl bg-[#0a3922]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Canopy Green</div>
                 <div className="text-[11px] font-mono text-[#747679]">#0a3922</div>
@@ -141,7 +141,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 8: Deep Ink */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#080331' }} />
+              <div className="w-full h-16 rounded-xl bg-[#080331]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Deep Ink</div>
                 <div className="text-[11px] font-mono text-[#747679]">#080331</div>
@@ -151,7 +151,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 9: Forest Ink */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#0f3e17' }} />
+              <div className="w-full h-16 rounded-xl bg-[#0f3e17]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Forest Ink</div>
                 <div className="text-[11px] font-mono text-[#747679]">#0f3e17</div>
@@ -161,7 +161,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 10: Primary Indigo */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#4865ff' }} />
+              <div className="w-full h-16 rounded-xl bg-[#4865ff]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Primary Indigo</div>
                 <div className="text-[11px] font-mono text-[#747679]">#4865ff</div>
@@ -171,7 +171,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 11: Coral Pulse */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#ff643b' }} />
+              <div className="w-full h-16 rounded-xl bg-[#ff643b]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Coral Pulse</div>
                 <div className="text-[11px] font-mono text-[#747679]">#ff643b</div>
@@ -181,7 +181,7 @@ export default function DesignSystemShowcasePage() {
 
             {/* Swatch 12: Peach Wash (Emergency) */}
             <div className="bg-white p-3 rounded-2xl border border-neutral-200/80 shadow-xs space-y-2">
-              <div className="w-full h-16 rounded-xl" style={{ backgroundColor: '#ffede8' }} />
+              <div className="w-full h-16 rounded-xl bg-[#ffede8]" />
               <div>
                 <div className="font-semibold text-xs text-[#080331]">Peach Wash</div>
                 <div className="text-[11px] font-mono text-[#747679]">#ffede8</div>
@@ -219,16 +219,10 @@ export default function DesignSystemShowcasePage() {
             <div className="bg-white p-8 rounded-[20px] border border-neutral-200 space-y-4">
               <span className="eyebrow-label text-[#4865ff]">Warm Brown Elevation Shadows</span>
               <div className="space-y-3">
-                <div
-                  className="p-4 rounded-xl bg-white text-xs font-mono text-[#080331]"
-                  style={{ boxShadow: shadows.warmLg }}
-                >
+                <div className="p-4 rounded-xl bg-white text-xs font-mono text-[#080331] shadow-[0_12px_24px_rgba(75,68,57,0.1)]">
                   shadows.warmLg: rgba(75, 68, 57, 0.1) 0px 12px 24px 0px
                 </div>
-                <div
-                  className="p-4 rounded-xl bg-white text-xs font-mono text-[#080331]"
-                  style={{ boxShadow: shadows.warmSm }}
-                >
+                <div className="p-4 rounded-xl bg-white text-xs font-mono text-[#080331] shadow-[0_4px_4px_rgba(75,68,57,0.05)]">
                   shadows.warmSm: rgba(75, 68, 57, 0.05) 0px 4px 4px 0px
                 </div>
                 <p className="text-xs text-[#747679]">

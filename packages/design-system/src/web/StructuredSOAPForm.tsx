@@ -46,101 +46,37 @@ export function StructuredSOAPForm({
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Outer Workspace Panel in Slate Hush (#b6ced5) */}
-      <div
-        style={{
-          backgroundColor: '#b6ced5',
-          borderRadius: '24px',
-          padding: '32px',
-          boxShadow: 'rgba(75, 68, 57, 0.08) 0px 8px 24px 0px',
-        }}
-      >
+      <div className="bg-[#b6ced5] rounded-3xl p-6 sm:p-8 shadow-[0_8px_24px_rgba(75,68,57,0.08)] border border-[#a2bcc3]">
         {/* Workspace Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2">
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#080331',
-                  backgroundColor: '#ffffff',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[#080331] bg-white px-2.5 py-0.5 rounded-full border border-neutral-200">
                 EHR Clinical Workspace (Ease + August EHR)
               </span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#0f3e17',
-                  backgroundColor: '#e1f4df',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                }}
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[#0f3e17] bg-[#e1f4df] px-2.5 py-0.5 rounded-full border border-[#b1dbb8]">
                 Telemedicine Encounter
               </span>
             </div>
-            <h2
-              style={{
-                fontFamily: "'DM Serif Display', 'Cormorant Garamond', Georgia, serif",
-                fontSize: '28px',
-                fontWeight: 400,
-                color: '#080331',
-                margin: '8px 0 2px 0',
-                letterSpacing: '-0.025em',
-              }}
-            >
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#080331] mt-2 mb-0.5 tracking-[-0.025em]">
               Structured Clinical Encounter Note
             </h2>
-            <p style={{ fontSize: '13px', color: '#080331', opacity: 0.8, margin: 0 }}>
-              Patient: <strong style={{ color: '#080331' }}>{patientName}</strong> ({patientId}) • Mandatory MDCN Documentation
+            <p className="text-xs text-[#080331]/80 m-0">
+              Patient: <strong className="text-[#080331]">{patientName}</strong> ({patientId}) • Mandatory MDCN Documentation
             </p>
           </div>
 
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '10px 18px',
-              borderRadius: '9999px',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: '#080331',
-              boxShadow: 'rgba(75, 68, 57, 0.06) 0px 2px 6px 0px',
-            }}
-          >
-            ● Live Encounter In Progress
+          <div className="bg-white px-4 py-2 rounded-full text-xs font-semibold text-[#080331] shadow-xs self-start sm:self-auto flex items-center gap-1.5 border border-[#efeeeb]">
+            <span className="w-2 h-2 rounded-full bg-[#31ce01] animate-pulse" />
+            <span>Live Encounter In Progress</span>
           </div>
         </div>
 
         {/* Paper White Inner Cards (14px radius per Ease style) */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Card 1: Chief Complaint */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '14px',
-              padding: '20px 24px',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 2px 6px 0px',
-            }}
-          >
-            <label
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: '#0f3e17',
-                marginBottom: '6px',
-              }}
-            >
+          <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-[0_2px_6px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#0f3e17] mb-1.5">
               S • Chief Complaint (Reason for Encounter)
             </label>
             <input
@@ -148,39 +84,14 @@ export function StructuredSOAPForm({
               value={formData.chiefComplaint}
               onChange={(e) => handleChange('chiefComplaint', e.target.value)}
               placeholder="Primary symptom or stated reason for visit"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid #efeeeb',
-                fontSize: '14px',
-                color: '#222326',
-                outline: 'none',
-              }}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[#efeeeb] text-sm text-[#222326] focus:outline-none focus:border-[#4865ff] bg-neutral-50/50"
               required
             />
           </div>
 
           {/* Card 2: History of Present Illness */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '14px',
-              padding: '20px 24px',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 2px 6px 0px',
-            }}
-          >
-            <label
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: '#0f3e17',
-                marginBottom: '6px',
-              }}
-            >
+          <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-[0_2px_6px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#0f3e17] mb-1.5">
               O • History of Present Illness (HPI & Clinical Observations)
             </label>
             <textarea
@@ -188,40 +99,14 @@ export function StructuredSOAPForm({
               value={formData.historyOfPresentIllness}
               onChange={(e) => handleChange('historyOfPresentIllness', e.target.value)}
               placeholder="Chronology, severity, aggravating/relieving factors, remote exam findings"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid #efeeeb',
-                fontSize: '14px',
-                color: '#222326',
-                outline: 'none',
-                resize: 'vertical',
-              }}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[#efeeeb] text-sm text-[#222326] focus:outline-none focus:border-[#4865ff] bg-neutral-50/50 resize-y"
               required
             />
           </div>
 
           {/* Card 3: Assessment */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '14px',
-              padding: '20px 24px',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 2px 6px 0px',
-            }}
-          >
-            <label
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: '#0f3e17',
-                marginBottom: '6px',
-              }}
-            >
+          <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-[0_2px_6px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#0f3e17] mb-1.5">
               A • Clinical Assessment & Provisional Diagnosis
             </label>
             <input
@@ -229,39 +114,14 @@ export function StructuredSOAPForm({
               value={formData.assessment}
               onChange={(e) => handleChange('assessment', e.target.value)}
               placeholder="Differential diagnosis or primary working assessment"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid #efeeeb',
-                fontSize: '14px',
-                color: '#222326',
-                outline: 'none',
-              }}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[#efeeeb] text-sm text-[#222326] focus:outline-none focus:border-[#4865ff] bg-neutral-50/50"
               required
             />
           </div>
 
           {/* Card 4: Plan */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '14px',
-              padding: '20px 24px',
-              boxShadow: 'rgba(75, 68, 57, 0.04) 0px 2px 6px 0px',
-            }}
-          >
-            <label
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: '#0f3e17',
-                marginBottom: '6px',
-              }}
-            >
+          <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-[0_2px_6px_rgba(75,68,57,0.04)] border border-[#efeeeb]">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#0f3e17] mb-1.5">
               P • Care Plan, Lifestyle Advice & Red-Flag Warnings
             </label>
             <textarea
@@ -269,16 +129,7 @@ export function StructuredSOAPForm({
               value={formData.plan}
               onChange={(e) => handleChange('plan', e.target.value)}
               placeholder="Clinical instructions, follow-up scheduling, warning precautions"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid #efeeeb',
-                fontSize: '14px',
-                color: '#222326',
-                outline: 'none',
-                resize: 'vertical',
-              }}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[#efeeeb] text-sm text-[#222326] focus:outline-none focus:border-[#4865ff] bg-neutral-50/50 resize-y"
               required
             />
           </div>
@@ -287,17 +138,7 @@ export function StructuredSOAPForm({
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              style={{
-                backgroundColor: '#0f3e17',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '14px 28px',
-                fontSize: '15px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: 'rgba(75, 68, 57, 0.1) 0px 8px 16px 0px',
-              }}
+              className="bg-[#0f3e17] hover:bg-[#0a3922] text-white px-7 py-3.5 rounded-full text-sm font-semibold tracking-wide transition-colors shadow-[0_8px_16px_rgba(75,68,57,0.1)] cursor-pointer"
             >
               Lock & Save Structured Encounter Note
             </button>
