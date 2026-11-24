@@ -37,10 +37,10 @@ export default function AdminRootLayout({
   const pathname = usePathname();
 
   const navTabs = [
-    { label: 'Operations & Queue', href: '/' },
-    { label: 'MDCN Doctor Vetting', href: '/doctors' },
-    { label: 'Emergency Logs & NDPR', href: '/redirects' },
-    { label: 'Revenue & Analytics', href: '/analytics' },
+    { label: 'Live Ops', href: '/admin/live-ops', aliases: ['/', '/live-ops', '/admin', '/admin/live-ops'] },
+    { label: 'Verifications', href: '/admin/verifications', aliases: ['/doctors', '/verifications', '/admin/verifications'] },
+    { label: 'Compliance', href: '/admin/compliance', aliases: ['/redirects', '/compliance', '/admin/compliance'] },
+    { label: 'Analytics & Disputes', href: '/admin/analytics', aliases: ['/analytics', '/admin/analytics'] },
   ];
 
   return (
@@ -74,7 +74,7 @@ export default function AdminRootLayout({
               {/* Admin Nav Tabs */}
               <nav className="hidden md:flex items-center gap-1 bg-white/10 p-1 rounded-full border border-white/10">
                 {navTabs.map((tab) => {
-                  const isActive = pathname === tab.href;
+                  const isActive = tab.aliases.includes(pathname || '/');
                   return (
                     <Link
                       key={tab.href}

@@ -27,7 +27,7 @@ export default function PatientOnboardingPage() {
   // Auth fields
   const [loginMode, setLoginMode] = useState<'PHONE' | 'EMAIL' | 'PATIENT_ID'>('PHONE');
   const [identifier, setIdentifier] = useState('+234 803 123 4567');
-  const [otpCode, setOtpCode] = useState('4829');
+  const [otpCode, setOtpCode] = useState('482910');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [patientId] = useState('PAT-48291');
 
@@ -251,16 +251,16 @@ export default function PatientOnboardingPage() {
             {isOtpSent && (
               <div className="p-4 rounded-2xl bg-[#e1f4df] border border-[#b1dbb8] space-y-2">
                 <div className="flex items-center justify-between text-xs font-medium text-[#0f3e17]">
-                  <span>Demo OTP sent to {identifier}</span>
-                  <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">Auto-filled: 4829</span>
+                  <span>Demo 6-digit OTP sent to {identifier}</span>
+                  <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">Auto-filled: 482910</span>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
-                    4-Digit Verification OTP
+                    6-Digit Verification OTP
                   </label>
                   <input
                     type="text"
-                    maxLength={4}
+                    maxLength={6}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     className="w-48 text-center tracking-[0.5em] font-mono font-bold text-lg border border-[#0f3e17]/30 rounded-xl px-4 py-2.5 bg-white focus:outline-none focus:border-[#0f3e17]"

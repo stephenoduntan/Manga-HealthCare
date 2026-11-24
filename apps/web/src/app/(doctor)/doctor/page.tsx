@@ -175,9 +175,28 @@ export default function DoctorWorkspacePage() {
               Patients who have cleared 8-symptom red flag triage and completed payment authorization.
             </p>
           </div>
-          <span className="text-xs font-semibold bg-[#e1f4df] text-[#0f3e17] px-3 py-1 rounded-full self-start sm:self-auto">
-            {incomingQueue.length} Patient{incomingQueue.length !== 1 ? 's' : ''} Ready to Claim
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold bg-[#e1f4df] text-[#0f3e17] px-3 py-1 rounded-full">
+              {incomingQueue.length} Patient{incomingQueue.length !== 1 ? 's' : ''} Ready to Claim
+            </span>
+            {incomingQueue[0] && (
+              <button
+                type="button"
+                disabled={verificationStatus === 'PENDING'}
+                onClick={() => {
+                  const first = incomingQueue[0];
+                  if (first) handleClaimEncounter(first.id);
+                }}
+                className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
+                  verificationStatus === 'PENDING'
+                    ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+                    : 'bg-[#0a3922] text-white hover:bg-[#0f3e17]'
+                }`}
+              >
+                Claim Next Patient →
+              </button>
+            )}
+          </div>
         </div>
 
         {incomingQueue.length > 0 ? (
@@ -240,6 +259,53 @@ export default function DoctorWorkspacePage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Upcoming Scheduled Slots (Sitemap Section 4.2.1) */}
+      <div className="bg-[#ebf0f8] rounded-3xl p-6 sm:p-8 border border-[#4865ff]/20 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="eyebrow-label text-[#4865ff] bg-white px-3 py-1 rounded-full">
+              Scheduled Appointments
+            </span>
+            <h3 className="font-serif text-2xl text-[#080331] font-normal mt-2">
+              Upcoming Booked Calendar Slots
+            </h3>
+          </div>
+          <Link
+            href="/doctor/schedule"
+            className="text-xs font-semibold text-[#4865ff] hover:underline"
+          >
+            Manage Availability Calendar →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="bg-white rounded-2xl p-4 border border-neutral-200 flex items-center justify-between">
+            <div>
+              <strong className="text-sm text-[#080331] block">Tomorrow, 10:00 AM - 10:30 AM</strong>
+              <span className="text-[#747679]">Patient: Ngozi Okeke (PAT-88120) • General GP</span>
+            </div>
+            <Link
+              href="/doctor/consultation/enc-sched-01"
+              className="bg-[#0a3922] text-white px-3.5 py-2 rounded-full font-semibold"
+            >
+              Open EHR
+            </Link>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-neutral-200 flex items-center justify-between">
+            <div>
+              <strong className="text-sm text-[#080331] block">Tomorrow, 11:00 AM - 11:45 AM</strong>
+              <span className="text-[#747679]">Patient: Tunde Bakare (PAT-12093) • Protected Therapy Slot</span>
+            </div>
+            <Link
+              href="/doctor/consultation/enc-ther-02"
+              className="bg-[#4865ff] text-white px-3.5 py-2 rounded-full font-semibold"
+            >
+              Open EHR
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Completed Clinical Encounters & SOAP History */}

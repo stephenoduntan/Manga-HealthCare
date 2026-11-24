@@ -245,12 +245,21 @@ export default function PartnerPortalPage() {
                 </span>
               </div>
 
-              {/* Allergy Warning */}
-              <div className="p-3 bg-[#ffede8] rounded-2xl border border-[#ff643b]/30 text-xs">
-                <span className="font-bold uppercase tracking-wider text-[#ff643b] block">
-                  Critical Allergy:
-                </span>
-                <span className="text-[#080331] font-semibold">{result.allergies.join(', ')}</span>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Allergy Warning */}
+                <div className="p-3 bg-[#ffede8] rounded-2xl border border-[#ff643b]/30 text-xs">
+                  <span className="font-bold uppercase tracking-wider text-[#ff643b] block">
+                    Critical Allergy:
+                  </span>
+                  <span className="text-[#080331] font-semibold">{result.allergies.join(', ')}</span>
+                </div>
+
+                <Link
+                  href={`/partner/patient/${result.patientId}`}
+                  className="bg-[#0a3922] text-white px-4 py-2.5 rounded-full text-xs font-semibold hover:bg-[#0f3e17] transition"
+                >
+                  Open Fulfillment View →
+                </Link>
               </div>
             </div>
 

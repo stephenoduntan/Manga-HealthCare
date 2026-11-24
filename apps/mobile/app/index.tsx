@@ -25,7 +25,7 @@ export default function MobileAuthScreen() {
   const handleRequestOtp = () => {
     if (!identifier.trim()) return;
     setStep('OTP');
-    setOtp('1234'); // Pre-fill mock OTP for smooth evaluation
+    setOtp('482910'); // 6-digit OTP per Sitemap Section 3.1 / 4.1
   };
 
   const handleVerifyOtp = async () => {
@@ -34,7 +34,7 @@ export default function MobileAuthScreen() {
   };
 
   const handleQuickLogin = async (role: UserRole, id: string) => {
-    await loginWithOtp(id, '1234', role);
+    await loginWithOtp(id, '482910', role);
   };
 
   return (

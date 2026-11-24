@@ -26,9 +26,11 @@ export default function DoctorLayout({
   const [isAvailable, setIsAvailable] = useState(true);
 
   const navItems = [
-    { label: 'Clinical Dashboard', href: '/doctor' },
-    { label: 'Active EHR Encounter', href: '/doctor/consultation/enc-live-01' },
-    { label: 'Provider Profile & Slots', href: '/doctor/onboarding' },
+    { label: 'Dashboard', href: '/doctor/dashboard' },
+    { label: 'Schedule', href: '/doctor/schedule' },
+    { label: 'Consult EHR', href: '/doctor/consultation/enc-live-01' },
+    { label: 'Payout Ledger', href: '/doctor/ledger' },
+    { label: 'Credentials', href: '/doctor/onboarding/credentials' },
   ];
 
   return (

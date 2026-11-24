@@ -26,10 +26,10 @@ export default function PatientLayout({
   const [patientName] = useState('Amaka Adeleke');
 
   const navItems = [
-    { label: 'Overview', href: '/patient' },
-    { label: 'Book / Instant Lobby', href: '/patient/book' },
-    { label: 'Intake Profile', href: '/patient/onboarding' },
-    { label: 'Consultation Room', href: '/patient/consultation/enc-live-01' },
+    { label: 'Home', href: '/patient/home' },
+    { label: 'Consult / Triage', href: '/patient/triage' },
+    { label: 'Records', href: '/patient/records' },
+    { label: 'Profile', href: '/patient/profile' },
   ];
 
   return (
@@ -76,7 +76,7 @@ export default function PatientLayout({
           {/* Right Header Identity Badge */}
           <div className="flex items-center gap-3">
             <Link
-              href="/patient/book"
+              href="/patient/triage"
               className="hidden sm:inline-flex items-center gap-2 bg-[#ff643b] text-white px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition shadow-xs"
             >
               <PhoneCall className="w-3.5 h-3.5" />

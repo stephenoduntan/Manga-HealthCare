@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -39,6 +39,13 @@ export default function PatientBookPage() {
   // 2 = Consultation Mode (Talk to Doctor Now vs Scheduled Slot)
   // 3 = Paystack / Flutterwave Checkout Modal / Screen
   const [step, setStep] = useState<1 | 1.5 | 2 | 3>(1);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('triage') === 'cleared') {
+      setStep(2);
+    }
+  }, []);
 
   // Patient Info
   const [patientId] = useState('PAT-48291');

@@ -34,6 +34,9 @@ export default function PatientConsultationRoomPage() {
   const router = useRouter();
   const encounterId = params?.id || 'enc-live-01';
 
+  // Lobby Queue vs Active Consultation toggle
+  const [roomStage, setRoomStage] = useState<'LOBBY' | 'ACTIVE'>('ACTIVE');
+
   // Video/Audio Controls
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
@@ -125,8 +128,8 @@ export default function PatientConsultationRoomPage() {
 
   const handleEndCall = () => {
     setIsCallActive(false);
-    alert('Consultation encounter concluded. Redirecting to your patient summary and E-Prescription.');
-    router.push('/patient');
+    alert('Consultation encounter concluded. Redirecting to your Medical Records & E-Prescription.');
+    router.push('/patient/records');
   };
 
   return (
@@ -137,18 +140,28 @@ export default function PatientConsultationRoomPage() {
           <div className="w-3 h-3 rounded-full bg-[#31ce01] animate-ping" />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-serif text-lg text-[#080331]">Live Consultation</span>
+              <span className="font-serif text-lg text-[#080331]">
+                {roomStage === 'LOBBY' ? 'Waiting Lobby Queue' : 'Live Consultation'}
+              </span>
               <span className="font-mono text-xs bg-[#e1f4df] text-[#0f3e17] px-2 py-0.5 rounded font-bold">
                 {encounterId}
               </span>
             </div>
             <p className="text-xs text-[#747679]">
-              Provider: <strong>Dr. Chidi Okafor</strong> (MDCN-78320 • Locum ID LOC-8492)
+              Provider: <strong>Dr. Chidi Okafor</strong> (MDCN-78320 • Locum ID LOC-9941)
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setRoomStage(roomStage === 'LOBBY' ? 'ACTIVE' : 'LOBBY')}
+            className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-[#ebf0f8] text-[#4865ff] border border-[#4865ff]/25 hover:brightness-95 transition"
+          >
+            {roomStage === 'LOBBY' ? 'Simulate Doctor Join →' : 'Preview Lobby View'}
+          </button>
+
           <div className="flex items-center gap-1.5 bg-[#f8f3eb] px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-mono font-bold text-[#080331]">
             <Clock className="w-3.5 h-3.5 text-[#ff643b]" />
             <span>{formatTimer(callDuration)}</span>
@@ -164,7 +177,31 @@ export default function PatientConsultationRoomPage() {
         </div>
       </div>
 
+      {/* Lobby Queue View (Sitemap Section 3.2.4) */}
+      {roomStage === 'LOBBY' && (
+        <div className="bg-[#0a3922] text-white rounded-[32px] p-8 md:p-12 border border-[#0f3e17] shadow-lg text-center max-w-2xl mx-auto space-y-6">
+          <span className="inline-flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-[#d2f2e3]">
+            <span className="w-2 h-2 rounded-full bg-[#31ce01] animate-ping" />
+            Live Redis Queue • Push Notifications Active
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-normal">
+            You are <span className="text-[#ff643b]">#2</span> in the Lobby Queue
+          </h2>
+          <p className="text-sm text-[#cfe7d3] max-w-md mx-auto leading-relaxed">
+            Estimated wait time: <strong>~4 minutes</strong>. You will receive an instant push & audio alert as soon as Dr. Chidi Okafor joins your encrypted consultation room.
+          </p>
+          <button
+            type="button"
+            onClick={() => setRoomStage('ACTIVE')}
+            className="bg-[#ff643b] text-white px-7 py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition shadow-md"
+          >
+            Enter Active Consultation Room Now
+          </button>
+        </div>
+      )}
+
       {/* Main Grid: Video Stream + Clinical Chat & Rash Uploader */}
+      {roomStage === 'ACTIVE' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Video SDK Container (lg:col-span-7) */}
         <div className="lg:col-span-7 space-y-4">
@@ -366,6 +403,7 @@ export default function PatientConsultationRoomPage() {
           </form>
         </div>
       </div>
+      )}
     </div>
   );
 }

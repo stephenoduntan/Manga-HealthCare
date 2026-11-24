@@ -22,7 +22,7 @@ export default function DoctorOnboardingPage() {
   // Practitioner Type State (Flowchart Section 2)
   const [practitionerType, setPractitionerType] = useState<'STANDARD' | 'LOCUM'>('STANDARD');
   const [locumIdInput, setLocumIdInput] = useState('LOC-9941');
-  const [locumOtp, setLocumOtp] = useState('4829');
+  const [locumOtp, setLocumOtp] = useState('482910');
 
   // Form State
   const [doctorName, setDoctorName] = useState('Dr. Chidi Okafor');
@@ -31,6 +31,8 @@ export default function DoctorOnboardingPage() {
   const [qualifications, setQualifications] = useState('MBBS (University of Ibadan), FWACS');
   const [yearsExperience, setYearsExperience] = useState('8');
   const [primarySpecialty, setPrimarySpecialty] = useState('General Practice & Emergency Medicine');
+  const [standardFee, setStandardFee] = useState('10000');
+  const [followupFee, setFollowupFee] = useState('5000');
   const [bio, setBio] = useState(
     'Experienced general physician passionate about acute telemedicine triage, primary care interventions, and patient-centered chronic disease prevention.'
   );
@@ -157,13 +159,14 @@ export default function DoctorOnboardingPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
-                Verification OTP
+                6-Digit Verification OTP
               </label>
               <input
                 type="text"
+                maxLength={6}
                 value={locumOtp}
                 onChange={(e) => setLocumOtp(e.target.value)}
-                placeholder="4829"
+                placeholder="482910"
                 className="w-full text-sm font-mono border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
                 required
               />
@@ -314,6 +317,33 @@ export default function DoctorOnboardingPage() {
                 value={yearsExperience}
                 onChange={(e) => setYearsExperience(e.target.value)}
                 className="w-full text-sm border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
+                Standard Consultation Fee (NGN)
+              </label>
+              <input
+                type="number"
+                value={standardFee}
+                onChange={(e) => setStandardFee(e.target.value)}
+                className="w-full text-sm font-mono border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
+                14-Day Follow-Up Fee (NGN)
+              </label>
+              <input
+                type="number"
+                value={followupFee}
+                onChange={(e) => setFollowupFee(e.target.value)}
+                className="w-full text-sm font-mono border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#4865ff] bg-[#f8f3eb]/20"
                 required
               />
             </div>
