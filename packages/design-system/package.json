@@ -11,9 +11,9 @@
       "require": "./dist/index.js"
     },
     "./tokens": {
-      "types": "./dist/tokens.d.ts",
-      "import": "./dist/tokens.mjs",
-      "require": "./dist/tokens.js"
+      "types": "./dist/tokens/index.d.ts",
+      "import": "./dist/tokens/index.mjs",
+      "require": "./dist/tokens/index.js"
     },
     "./native": {
       "types": "./dist/native.d.ts",

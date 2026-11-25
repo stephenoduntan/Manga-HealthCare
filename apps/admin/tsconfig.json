@@ -22,7 +22,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@manga/design-system": ["../../packages/design-system/src/index.ts"],
+      "@manga/design-system/tokens": ["../../packages/design-system/src/tokens/index.ts"],
+      "@manga/design-system/native": ["../../packages/design-system/src/native/index.ts"],
+      "@manga/api-contract": ["../../packages/api-contract/src/index.ts"],
+      "@manga/api-contract/triage": ["../../packages/api-contract/src/triage.contract.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
