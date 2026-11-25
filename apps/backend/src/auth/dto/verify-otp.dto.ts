@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsBoolean, IsNumber } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Role } from '@prisma/client';
 
 export class VerifyOtpDto {
@@ -9,6 +9,18 @@ export class VerifyOtpDto {
   @IsNotEmpty()
   @IsString()
   otp: string;
+
+  @IsOptional()
+  @IsString()
+  login_mode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_new_user?: boolean;
+
+  @IsOptional()
+  @IsString()
+  intent?: string;
 
   @IsOptional()
   @IsString()
@@ -25,6 +37,26 @@ export class VerifyOtpDto {
   @IsOptional()
   @IsString()
   role?: Role;
+
+  @IsOptional()
+  @IsString()
+  rbac_role?: string;
+
+  @IsOptional()
+  @IsString()
+  totp_code?: string;
+
+  @IsOptional()
+  @IsString()
+  facility_name?: string;
+
+  @IsOptional()
+  @IsString()
+  partner_type?: string;
+
+  @IsOptional()
+  @IsString()
+  fcm_token?: string;
 
   @IsOptional()
   @IsBoolean()

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { HelpCircle } from 'lucide-react';
 import { EmergencyTriageChecklist } from '@manga/design-system';
 import { evaluateTriage, RedFlagCode } from '@manga/api-contract';
+import { authorizedApiFetch, getAuthSession } from '@/lib/api-client';
 
 export default function PatientTriageInterceptorPage() {
   const router = useRouter();
@@ -15,22 +16,33 @@ export default function PatientTriageInterceptorPage() {
   const [clarificationQuestion, setClarificationQuestion] = useState<string | null>(null);
   const [clarificationAnswer, setClarificationAnswer] = useState('');
 
-  const runEvaluation = (selectedCodes: string[]) => {
-    const result = evaluateTriage({
-      patient_id: patientId,
+  const runEvaluation = async (selectedCodes: string[]) => {
+    const activePatientId = getAuthSession()?.user?.public_id || patientId;
+    const payload = {
+      patient_id: activePatientId,
       selected_red_flags: selectedCodes as RedFlagCode[],
       chief_complaint: chiefComplaint,
       clarification_response: clarificationAnswer || undefined,
+    };
+
+    const apiRes = await authorizedApiFetch('/api/v1/triage/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
 
+    const result = apiRes.ok && apiRes.data ? apiRes.data : evaluateTriage(payload);
+
     if (result.status === 'HALT_AND_REDIRECT') {
-      const flagsParam = encodeURIComponent(result.symptoms_flagged.join(','));
+      const flagsParam = encodeURIComponent((result.symptoms_flagged || selectedCodes).join(','));
       router.push(`/patient/triage/emergency-redirect?flags=${flagsParam}`);
     } else if (result.status === 'ASK_CLARIFYING_QUESTION') {
       setClarificationQuestion(
         result.clarifying_question || 'Where is the pain located and how severe is it?'
       );
     } else {
+      if (result.triage_clearance_token && typeof window !== 'undefined') {
+        window.sessionStorage.setItem('manga_triage_clearance_token', result.triage_clearance_token);
+      }
       router.push('/patient/book?triage=cleared');
     }
   };

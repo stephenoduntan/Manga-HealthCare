@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { authorizedApiFetch, saveAuthSession } from '@/lib/api-client';
 
 export default function PartnerAuthPage() {
   const router = useRouter();
@@ -10,16 +11,36 @@ export default function PartnerAuthPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
 
-  const handleRequestOtp = (e: React.FormEvent) => {
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!partnerIdentifier.trim()) return;
+    const res = await authorizedApiFetch<{ dev_otp?: string }>('/api/v1/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: partnerIdentifier.trim(),
+        role: 'PARTNER',
+        login_mode: 'PARTNER_ID',
+      }),
+    });
     setOtpSent(true);
-    setOtpCode('482910');
+    setOtpCode(res.data?.dev_otp || '482910');
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.trim().length < 6) return;
+    const res = await authorizedApiFetch('/api/v1/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: partnerIdentifier.trim(),
+        otp: otpCode.trim(),
+        role: 'PARTNER',
+        login_mode: 'PARTNER_ID',
+      }),
+    });
+    if (res.ok && res.data?.access_token) {
+      saveAuthSession(res.data);
+    }
     router.push('/partner/lookup');
   };
 

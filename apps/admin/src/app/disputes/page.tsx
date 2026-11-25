@@ -10,6 +10,7 @@ import {
   FileText,
   ShieldCheck,
 } from 'lucide-react';
+import { adminApiFetch } from '@/lib/api-client';
 
 interface DisputeBooking {
   bookingId: string;
@@ -82,7 +83,11 @@ export default function AdminDisputesPage() {
     );
   });
 
-  const handleRefund = (bookingId: string) => {
+  const handleRefund = async (bookingId: string) => {
+    await adminApiFetch(`/api/v1/admin/disputes/${encodeURIComponent(bookingId)}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'REFUND', note: noteInputs[bookingId] }),
+    });
     setBookings((prev) =>
       prev.map((b) =>
         b.bookingId === bookingId
@@ -93,7 +98,11 @@ export default function AdminDisputesPage() {
     alert(`Paystack/Flutterwave refund issued for ${bookingId} and recorded in audit_log.`);
   };
 
-  const handleReassign = (bookingId: string) => {
+  const handleReassign = async (bookingId: string) => {
+    await adminApiFetch(`/api/v1/admin/disputes/${encodeURIComponent(bookingId)}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'REASSIGN', note: noteInputs[bookingId] }),
+    });
     setBookings((prev) =>
       prev.map((b) =>
         b.bookingId === bookingId

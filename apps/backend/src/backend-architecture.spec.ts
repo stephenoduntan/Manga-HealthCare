@@ -141,4 +141,29 @@ describe('Backend Architecture Guards, Integrations, Auth Refresh & Partner Fulf
     });
     expect(res.authorization_url).toContain('ref_001');
   });
+
+  it('AuthService should reject non-@mangahealthcare.com emails for ADMIN login', async () => {
+    const otp = await authService.requestOtp({ identifier: 'intruder@gmail.com', role: Role.ADMIN });
+    await expect(
+      authService.verifyOtp({
+        identifier: 'intruder@gmail.com',
+        otp: otp.dev_otp!,
+        role: Role.ADMIN,
+        totp_code: '819204',
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('AuthService should include rbac_role in ADMIN token payload on whitelisted login', async () => {
+    const otp = await authService.requestOtp({ identifier: 'ops@mangahealthcare.com', role: Role.ADMIN });
+    const login = await authService.verifyOtp({
+      identifier: 'ops@mangahealthcare.com',
+      otp: otp.dev_otp!,
+      role: Role.ADMIN,
+      rbac_role: 'OPS_DISPATCH',
+      totp_code: '819204',
+    });
+    expect(login.access_token).toBeDefined();
+    expect(login.user.public_id.startsWith('ADM-')).toBe(true);
+  });
 });

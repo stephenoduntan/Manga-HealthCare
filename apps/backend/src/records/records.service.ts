@@ -50,23 +50,39 @@ export class RecordsService {
    * Updates clinical intake details
    */
   async updatePatientIntake(patientId: string, dto: UpdateIntakeDto) {
+    const mergedAllergies = [
+      ...(Array.isArray(dto.allergies) ? dto.allergies : dto.allergies ? [dto.allergies] : []),
+      ...(dto.other_allergy?.trim() ? [dto.other_allergy.trim()] : []),
+    ];
+    const baseConditions = dto.existing_conditions ?? dto.chronic_conditions;
+    const mergedConditions = [
+      ...(Array.isArray(baseConditions) ? baseConditions : baseConditions ? [baseConditions] : []),
+      ...(dto.other_condition?.trim() ? [dto.other_condition.trim()] : []),
+    ];
+
     if (this.prisma.isConnected) {
       try {
+        if (dto.full_name?.trim()) {
+          await this.prisma.user.update({
+            where: { id: patientId },
+            data: { name: dto.full_name.trim() },
+          });
+        }
         const profile = await this.prisma.patientProfile.upsert({
           where: { user_id: patientId },
           create: {
             user_id: patientId,
             date_of_birth: dto.date_of_birth ? new Date(dto.date_of_birth) : undefined,
             preferred_languages: dto.preferred_languages || ['English'],
-            allergies: dto.allergies,
-            existing_conditions: dto.existing_conditions,
+            allergies: mergedAllergies,
+            existing_conditions: mergedConditions,
             current_medications: dto.current_medications,
           },
           update: {
             date_of_birth: dto.date_of_birth ? new Date(dto.date_of_birth) : undefined,
             preferred_languages: dto.preferred_languages,
-            allergies: dto.allergies,
-            existing_conditions: dto.existing_conditions,
+            allergies: mergedAllergies,
+            existing_conditions: mergedConditions,
             current_medications: dto.current_medications,
           },
         });
@@ -84,10 +100,11 @@ export class RecordsService {
     // Memory fallback
     const mem = {
       user_id: patientId,
+      full_name: dto.full_name,
       date_of_birth: dto.date_of_birth,
       preferred_languages: dto.preferred_languages || ['English'],
-      allergies: dto.allergies,
-      existing_conditions: dto.existing_conditions,
+      allergies: mergedAllergies,
+      existing_conditions: mergedConditions,
       current_medications: dto.current_medications,
     };
     this.memoryPatientProfiles.set(patientId, mem);

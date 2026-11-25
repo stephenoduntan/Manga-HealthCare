@@ -139,20 +139,34 @@ export class PaymentsService {
         : `https://checkout.flutterwave.com/v3/hosted/pay/${reference}`;
 
     if (dto.provider === PaymentProvider.PAYSTACK && this.paystackAdapter) {
+      const normalizedChannel =
+        dto.channel === 'TRANSFER' || dto.channel === 'BANK_TRANSFER'
+          ? 'bank_transfer'
+          : dto.channel === 'USSD'
+          ? 'ussd'
+          : 'card';
       const psInit = await this.paystackAdapter.initializeTransaction({
         email: 'patient@mangahealthcare.com',
         amountNaira: feeSplit.total_amount,
         reference,
-        metadata: { booking_id: dto.booking_id },
+        channels: dto.channel ? [normalizedChannel] : ['card', 'bank_transfer', 'ussd'],
+        metadata: { booking_id: dto.booking_id, is_followup: dto.is_followup ?? feeSplit.is_followup },
       });
       checkoutUrl = psInit.authorization_url;
     } else if (dto.provider === PaymentProvider.FLUTTERWAVE && this.flutterwaveAdapter) {
+      const flwOption =
+        dto.channel === 'TRANSFER' || dto.channel === 'BANK_TRANSFER'
+          ? 'banktransfer'
+          : dto.channel === 'USSD'
+          ? 'ussd'
+          : 'card';
       const flwInit = await this.flutterwaveAdapter.initializePayment({
         email: 'patient@mangahealthcare.com',
         phone: '+2348000000000',
         name: 'Manga Patient',
         amountNaira: feeSplit.total_amount,
         txRef: reference,
+        paymentOptions: dto.channel ? flwOption : 'card,banktransfer,ussd',
       });
       checkoutUrl = flwInit.link;
     }

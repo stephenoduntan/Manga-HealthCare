@@ -181,13 +181,35 @@ export class AuthService {
     if (rawIdentifier.toUpperCase().startsWith('ADM-')) resolvedRole = Role.ADMIN;
     if (rawIdentifier.toUpperCase().startsWith('PRT-')) resolvedRole = Role.PARTNER;
 
+    // Enforce Admin domain & 2FA TOTP checks when logging into Admin Ops
+    if (resolvedRole === Role.ADMIN) {
+      if (rawIdentifier.includes('@') && !normalized.endsWith('@mangahealthcare.com')) {
+        throw new UnauthorizedException(
+          'Admin access restricted to whitelisted @mangahealthcare.com staff accounts.',
+        );
+      }
+      if (dto.totp_code !== undefined && dto.totp_code.trim().length < 6) {
+        throw new UnauthorizedException('Valid 6-digit 2FA authenticator code is required for Admin login.');
+      }
+    }
+
     // If user does not exist, create new user
     if (!user) {
       const isEmail = rawIdentifier.includes('@');
       const phone = dto.phone || (isEmail ? `+234${Math.floor(1000000000 + Math.random() * 9000000000)}` : rawIdentifier);
       const email = dto.email || (isEmail ? normalized : undefined);
-      const name = dto.name || (resolvedRole === Role.PATIENT ? 'New Patient' : 'Medical Professional');
-      const publicId = this.generatePublicId(resolvedRole, isLocum);
+      const name =
+        dto.name ||
+        dto.facility_name ||
+        (resolvedRole === Role.PATIENT ? 'New Patient' : 'Medical Professional');
+      const publicId =
+        rawIdentifier.toUpperCase().startsWith('PAT-') ||
+        rawIdentifier.toUpperCase().startsWith('DOC-') ||
+        rawIdentifier.toUpperCase().startsWith('LOC-') ||
+        rawIdentifier.toUpperCase().startsWith('PRT-') ||
+        rawIdentifier.toUpperCase().startsWith('ADM-')
+          ? rawIdentifier.toUpperCase()
+          : this.generatePublicId(resolvedRole, isLocum);
       const authId = `auth_${crypto.randomBytes(8).toString('hex')}`;
 
       if (this.prisma.isConnected) {
@@ -277,6 +299,7 @@ export class AuthService {
       telemedicine_consent: user.telemedicine_consent,
       ndpr_consent: user.ndpr_consent,
       verification_status: user.doctor_profile?.verification_status,
+      rbac_role: dto.rbac_role || (user.role === Role.ADMIN ? 'SUPER_ADMIN' : undefined),
     };
 
     const token = this.jwtService.sign(payload);

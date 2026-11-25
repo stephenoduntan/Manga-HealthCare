@@ -1,11 +1,12 @@
 import {
   Injectable,
+  ForbiddenException,
   NotFoundException,
   BadRequestException,
   Logger,
   Optional,
 } from '@nestjs/common';
-import { ConsultationMode, BookingStatus } from '@prisma/client';
+import { ConsultationMode, BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PdfService } from './pdf.service';
@@ -430,9 +431,9 @@ export class ConsultationsService {
   }
 
   /**
-   * Get Consultation by ID
+   * Get Consultation by ID with participant / admin authorization
    */
-  async getConsultation(consultationId: string) {
+  async getConsultation(consultationId: string, requester?: { id: string; role: string }) {
     if (this.prisma.isConnected) {
       try {
         const c = await this.prisma.consultation.findUnique({
@@ -444,8 +445,20 @@ export class ConsultationsService {
             prescriptions: true,
           },
         });
-        if (c) return c;
+        if (c) {
+          if (
+            requester &&
+            requester.role !== Role.ADMIN &&
+            c.booking &&
+            c.booking.patient_id !== requester.id &&
+            c.booking.doctor_id !== requester.id
+          ) {
+            throw new ForbiddenException('Not authorized to access this consultation');
+          }
+          return c;
+        }
       } catch (err: any) {
+        if (err instanceof ForbiddenException) throw err;
         this.logger.warn(`Failed to get consultation: ${err?.message}`);
       }
     }

@@ -95,8 +95,8 @@ export class BookingsController {
 
   @Get(':id')
   @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
-  async getBooking(@Param('id') id: string) {
-    return this.bookingsService.getBooking(id);
+  async getBooking(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.bookingsService.getBooking(id, user);
   }
 
   @Patch(':id/cancel')

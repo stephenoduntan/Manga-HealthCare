@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight, Stethoscope } from 'lucide-react';
+import { authorizedApiFetch, saveAuthSession } from '@/lib/api-client';
 
 export default function DoctorAuthPage() {
   const router = useRouter();
@@ -22,16 +23,39 @@ export default function DoctorAuthPage() {
     }
   }, []);
 
-  const handleRequestOtp = (e: React.FormEvent) => {
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) return;
+    const role = authTab === 'LOCUM_ID' ? 'LOCUM' : 'DOCTOR';
+    const res = await authorizedApiFetch<{ dev_otp?: string }>('/api/v1/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: identifier.trim(),
+        role,
+        login_mode: authTab,
+      }),
+    });
     setOtpSent(true);
-    setOtpCode('482910');
+    setOtpCode(res.data?.dev_otp || '482910');
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.trim().length < 6) return;
+    const role = authTab === 'LOCUM_ID' ? 'LOCUM' : 'DOCTOR';
+    const res = await authorizedApiFetch('/api/v1/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: identifier.trim(),
+        otp: otpCode.trim(),
+        role,
+        login_mode: authTab,
+        is_locum: authTab === 'LOCUM_ID',
+      }),
+    });
+    if (res.ok && res.data?.access_token) {
+      saveAuthSession(res.data);
+    }
     if (isApplyMode) {
       router.push('/doctor/onboarding/credentials');
     } else {

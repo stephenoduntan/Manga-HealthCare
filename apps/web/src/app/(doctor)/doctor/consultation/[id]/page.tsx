@@ -9,6 +9,7 @@ import {
   SOAPData,
   PrescriptionItem,
 } from '@manga/design-system';
+import { authorizedApiFetch } from '@/lib/api-client';
 import {
   Mic,
   MicOff,
@@ -110,30 +111,62 @@ export default function DoctorActiveConsultationPage() {
     setInputText('');
   };
 
-  const handleConcludeCall = () => {
+  const handleConcludeCall = async () => {
     const concludedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WAT';
     setEndTime(concludedAt);
+    await authorizedApiFetch(`/api/v1/consultations/${encounterId}/end`, { method: 'POST' });
     alert(
       `Clinical Session Concluded!\n• auto-logged start_time: ${startTime}\n• auto-logged end_time: ${concludedAt}\n• Finalized SOAP Notes & E-Prescriptions linked to Patient Record ${patientInfo.id}.\nReturning to Doctor Workspace.`
     );
     router.push('/doctor/dashboard');
   };
 
-  const handleSaveSOAP = (data: SOAPData) => {
+  const handleSaveSOAP = async (data: SOAPData) => {
+    await authorizedApiFetch(`/api/v1/clinical-docs/${encounterId}/notes`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        notes: {
+          chief_complaint: data.chiefComplaint,
+          history_of_present_illness: data.historyOfPresentIllness,
+          assessment: data.assessment,
+          plan: data.plan,
+        },
+      }),
+    });
     alert(
-      `SOAP Note saved successfully to Patient Record PAT-48291!\nAssessment: ${data.assessment}`
+      `SOAP Note saved successfully to Patient Record ${patientInfo.id}!\nAssessment: ${data.assessment}`
     );
   };
 
-  const handleGeneratePdf = (items: PrescriptionItem[]) => {
+  const handleGeneratePdf = async (items: PrescriptionItem[]) => {
+    await authorizedApiFetch(`/api/v1/clinical-docs/${encounterId}/prescriptions`, {
+      method: 'POST',
+      body: JSON.stringify({
+        items: items.map((item) => ({
+          drug_name: item.drugName,
+          dosage: item.dosage,
+          frequency: item.frequency,
+          duration: item.duration,
+          instructions: item.instructions || 'Take as directed',
+        })),
+      }),
+    });
     alert(
       `Electronic Prescription PDF generated successfully with ${items.length} items.\nDigitally signed under MDCN-78320.`
     );
   };
 
-  const handleSaveReferral = (e: React.FormEvent) => {
+  const handleSaveReferral = async (e: React.FormEvent) => {
     e.preventDefault();
     setReferralSubmitted(true);
+    await authorizedApiFetch(`/api/v1/clinical-docs/${encounterId}/referrals`, {
+      method: 'POST',
+      body: JSON.stringify({
+        lab_tests: labTests,
+        imaging_referral: imagingReferral,
+        referral_center: referralCenter,
+      }),
+    });
     setTimeout(() => {
       setReferralSubmitted(false);
       alert('Diagnostic lab order & specialist referral dispatched to Partner counter!');

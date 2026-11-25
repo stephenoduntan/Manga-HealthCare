@@ -12,6 +12,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { PersistentEmergencyBar } from '@manga/design-system';
+import { authorizedApiFetch } from '@/lib/api-client';
 
 interface PatientRecordResult {
   patientId: string;
@@ -72,11 +73,45 @@ export default function PartnerLookupPage() {
 
   const [dispenseSuccess, setDispenseSuccess] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setHasQueried(true);
-    if (searchQuery.trim().toUpperCase() === 'PAT-48291') {
+    const normalizedId = searchQuery.trim().toUpperCase();
+    const res = await authorizedApiFetch(`/api/v1/partners/lookup/${encodeURIComponent(normalizedId)}`);
+    if (res.ok && res.data?.patient_summary) {
+      setResult({
+        patientId: res.data.patient_summary.public_id,
+        patientName: res.data.patient_summary.name,
+        ageGender: 'Verified Patient',
+        allergies: Array.isArray(res.data.patient_summary.allergies)
+          ? res.data.patient_summary.allergies
+          : [],
+        prescriptions: (res.data.active_prescriptions || []).map((rx: any) => ({
+          id: rx.prescription_id,
+          date: new Date(rx.date_prescribed).toLocaleDateString(),
+          doctor: rx.prescribing_doctor?.name || 'Clinician',
+          mdcnLicense: rx.prescribing_doctor?.mdcn_license || 'MDCN-VERIFIED',
+          status: rx.is_fulfilled ? 'DISPENSED' : 'ACTIVE',
+          items: (rx.items || []).map((it: any) => ({
+            name: it.drug_name,
+            dosage: it.dosage,
+            frequency: it.frequency,
+            duration: it.duration,
+          })),
+        })),
+        labRequests: (res.data.lab_requests || []).map((lab: any) => ({
+          id: lab.consultation_id,
+          date: new Date(lab.date).toLocaleDateString(),
+          doctor: 'Attending Physician',
+          tests: typeof lab.requests === 'string' ? lab.requests : JSON.stringify(lab.requests),
+          status: 'PENDING_COLLECTION',
+        })),
+      });
+      return;
+    }
+
+    if (normalizedId === 'PAT-48291') {
       setResult({
         patientId: 'PAT-48291',
         patientName: 'Amaka Adeleke',
@@ -110,9 +145,12 @@ export default function PartnerLookupPage() {
     }
   };
 
-  const handleDispense = (rxId: string) => {
+  const handleDispense = async (rxId: string) => {
     if (!result) return;
     setDispenseSuccess(true);
+    await authorizedApiFetch(`/api/v1/partners/prescriptions/${encodeURIComponent(rxId)}/fulfill`, {
+      method: 'PATCH',
+    });
     setTimeout(() => {
       setResult({
         ...result,

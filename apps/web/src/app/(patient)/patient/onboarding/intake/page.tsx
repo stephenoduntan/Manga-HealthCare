@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Languages, Pill, HeartPulse, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { authorizedApiFetch } from '@/lib/api-client';
 
 export default function PatientIntakePage() {
   const router = useRouter();
@@ -25,8 +26,17 @@ export default function PatientIntakePage() {
     setList(cleaned.includes(item) ? cleaned.filter((i) => i !== item) : [...cleaned, item]);
   };
 
-  const handleSaveIntake = (e: React.FormEvent) => {
+  const handleSaveIntake = async (e: React.FormEvent) => {
     e.preventDefault();
+    await authorizedApiFetch('/api/v1/patients/me/intake', {
+      method: 'PUT',
+      body: JSON.stringify({
+        preferred_languages: selectedLanguages,
+        allergies,
+        existing_conditions: conditions,
+        current_medications: currentMedications,
+      }),
+    });
     router.push('/patient/home');
   };
 

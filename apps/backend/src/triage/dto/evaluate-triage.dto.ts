@@ -16,4 +16,8 @@ export class EvaluateTriageDto {
   @IsOptional()
   @IsString()
   clarification_response?: string;
+
+  @IsOptional()
+  @IsString()
+  intent?: string;
 }

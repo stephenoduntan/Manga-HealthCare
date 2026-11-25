@@ -1,4 +1,4 @@
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 
 export class ConsentDto {
   @IsBoolean()
@@ -6,4 +6,8 @@ export class ConsentDto {
 
   @IsBoolean()
   ndpr_consent: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  terms_accepted?: boolean;
 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Calendar, Plus, Clock, Trash2, CheckCircle2 } from 'lucide-react';
+import { authorizedApiFetch } from '@/lib/api-client';
 
 interface TimeSlot {
   id: string;
@@ -23,13 +24,22 @@ export default function DoctorSchedulePage() {
   const [newTimeRange, setNewTimeRange] = useState('09:30 AM - 10:15 AM');
   const [newType, setNewType] = useState<'GENERAL' | 'THERAPY_MANDATORY'>('THERAPY_MANDATORY');
 
-  const handleAddSlot = (e: React.FormEvent) => {
+  const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDay.trim() || !newTimeRange.trim()) return;
+    const res = await authorizedApiFetch('/api/v1/doctors/slots', {
+      method: 'POST',
+      body: JSON.stringify({
+        day: newDay.trim(),
+        time_range: newTimeRange.trim(),
+        slot_type: newType,
+      }),
+    });
+    const slotId = res.data?.id || `slot-${Date.now()}`;
     setSlots((prev) => [
       ...prev,
       {
-        id: `slot-${Date.now()}`,
+        id: slotId,
         day: newDay,
         timeRange: newTimeRange,
         slotType: newType,
@@ -38,7 +48,8 @@ export default function DoctorSchedulePage() {
     ]);
   };
 
-  const handleRemoveSlot = (id: string) => {
+  const handleRemoveSlot = async (id: string) => {
+    await authorizedApiFetch(`/api/v1/doctors/slots/${id}`, { method: 'DELETE' });
     setSlots((prev) => prev.filter((s) => s.id !== id));
   };
 

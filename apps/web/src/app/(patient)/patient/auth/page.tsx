@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight, CheckCircle2, Lock } from 'lucide-react';
+import { authorizedApiFetch, saveAuthSession } from '@/lib/api-client';
 
 export default function PatientAuthPage() {
   const router = useRouter();
@@ -28,17 +29,42 @@ export default function PatientAuthPage() {
     }
   }, []);
 
-  const handleRequestOtp = (e: React.FormEvent) => {
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) return;
+    const res = await authorizedApiFetch<{ dev_otp?: string }>('/api/v1/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: identifier.trim(),
+        role: 'PATIENT',
+        login_mode: loginMode,
+      }),
+    });
     setOtpSent(true);
-    setOtpCode('482910'); // 6-digit OTP per Sitemap Section 3.1
+    setOtpCode(res.data?.dev_otp || '482910'); // 6-digit OTP per Sitemap Section 3.1
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.trim().length < 6) return;
-    const assignedId = loginMode === 'PATIENT_ID' ? identifier.toUpperCase() : 'PAT-48291';
+    const res = await authorizedApiFetch('/api/v1/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: identifier.trim(),
+        otp: otpCode.trim(),
+        role: 'PATIENT',
+        login_mode: loginMode,
+        name: isNewUser ? fullName.trim() : undefined,
+        is_new_user: isNewUser,
+        intent: intent || undefined,
+      }),
+    });
+    if (res.ok && res.data?.access_token) {
+      saveAuthSession(res.data);
+    }
+    const assignedId =
+      res.data?.user?.public_id ||
+      (loginMode === 'PATIENT_ID' ? identifier.toUpperCase() : 'PAT-48291');
     setVerifiedPatientId(assignedId);
 
     setTimeout(() => {

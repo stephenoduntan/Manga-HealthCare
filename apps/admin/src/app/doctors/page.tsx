@@ -11,6 +11,7 @@ import {
   ExternalLink,
   GraduationCap,
 } from 'lucide-react';
+import { adminApiFetch } from '@/lib/api-client';
 
 interface PendingDoctor {
   id: string;
@@ -67,23 +68,31 @@ export default function AdminDoctorVettingPage() {
     },
   ]);
 
-  const handleApprove = (id: string) => {
-    const randomLocumId = `LOC-${Math.floor(1000 + Math.random() * 9000)}`;
+  const handleApprove = async (id: string) => {
+    const res = await adminApiFetch(`/api/v1/admin/verifications/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'VERIFIED' }),
+    });
+    const assignedLocumId = res.data?.public_id || `LOC-${Math.floor(1000 + Math.random() * 9000)}`;
     setDoctors((prev) =>
       prev.map((doc) =>
         doc.id === id
           ? {
               ...doc,
               status: 'APPROVED',
-              assignedLocumId: randomLocumId,
+              assignedLocumId,
             }
           : doc
       )
     );
-    alert(`Doctor approved! Permanent Locum ID ${randomLocumId} generated and dispatched.`);
+    alert(`Doctor approved! Permanent Locum ID ${assignedLocumId} generated and dispatched.`);
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
+    await adminApiFetch(`/api/v1/admin/verifications/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'REJECTED', reason: 'MDCN certificate requires re-upload' }),
+    });
     setDoctors((prev) =>
       prev.map((doc) => (doc.id === id ? { ...doc, status: 'REJECTED' } : doc))
     );

@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { BookingType } from '@prisma/client';
 
 export class CreateBookingDto {
@@ -17,6 +17,14 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   slot_id?: string;
+
+  @IsOptional()
+  @IsString()
+  slot_label?: string;
+
+  @IsOptional()
+  @IsString()
+  consultation_mode?: string;
 
   @IsOptional()
   @IsBoolean()

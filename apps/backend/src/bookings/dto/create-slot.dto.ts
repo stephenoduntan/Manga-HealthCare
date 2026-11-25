@@ -1,11 +1,23 @@
-import { IsDateString, IsNotEmpty } from 'class-validator';
+import { IsDateString, IsOptional, IsString } from 'class-validator';
 
 export class CreateSlotDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
-  start_time: string;
+  start_time?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
-  end_time: string;
+  end_time?: string;
+
+  @IsOptional()
+  @IsString()
+  day?: string;
+
+  @IsOptional()
+  @IsString()
+  time_range?: string;
+
+  @IsOptional()
+  @IsString()
+  slot_type?: 'GENERAL' | 'THERAPY_MANDATORY';
 }

@@ -21,7 +21,10 @@ try {
 } catch (err) {
   let hasGeneratedClient = false;
   try {
-    require.resolve('.prisma/client', { paths: [backendDir] });
+    const prismaClientDir = path.dirname(
+      require.resolve('@prisma/client/package.json', { paths: [backendDir] }),
+    );
+    require.resolve('.prisma/client', { paths: [prismaClientDir, backendDir] });
     hasGeneratedClient = true;
   } catch {
     hasGeneratedClient = false;

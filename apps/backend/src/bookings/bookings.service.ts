@@ -62,9 +62,14 @@ export class BookingsService {
 
     // 3. PRD Therapy Rule Enforcement
     if (dto.booking_type === BookingType.THERAPY_MANDATORY_SLOT) {
-      if (!dto.slot_id || !dto.doctor_id) {
+      if (!dto.slot_id && !dto.slot_label) {
         throw new BadRequestException(
           'Therapy sessions MUST be booked using a designated availability slot and a selected therapist.',
+        );
+      }
+      if (!dto.doctor_id && !dto.slot_label) {
+        throw new BadRequestException(
+          'Therapy sessions MUST specify a selected therapist or designated slot.',
         );
       }
     }
@@ -160,12 +165,12 @@ export class BookingsService {
       };
     } else {
       // Scheduled Slot Booking
-      if (!dto.slot_id) {
+      if (!dto.slot_id && !dto.slot_label) {
         throw new BadRequestException('Availability slot_id is required for scheduled bookings');
       }
 
       // Check slot availability atomically
-      if (this.prisma.isConnected) {
+      if (this.prisma.isConnected && dto.slot_id) {
         try {
           const slot = await this.prisma.availabilitySlot.findUnique({
             where: { id: dto.slot_id },
@@ -214,7 +219,7 @@ export class BookingsService {
       }
 
       // Memory fallback for scheduled slot
-      const memSlot = this.memorySlots.get(dto.slot_id);
+      const memSlot = dto.slot_id ? this.memorySlots.get(dto.slot_id) : null;
       if (memSlot && memSlot.is_booked) {
         throw new BadRequestException('This slot has already been reserved by another patient');
       }
@@ -224,7 +229,9 @@ export class BookingsService {
         id: bookingId,
         patient_id: patientId,
         doctor_id: dto.doctor_id,
-        slot_id: dto.slot_id,
+        slot_id: dto.slot_id || null,
+        slot_label: dto.slot_label || null,
+        consultation_mode: dto.consultation_mode || 'VIDEO',
         booking_type: dto.booking_type,
         is_followup: isFollowup,
         status: BookingStatus.PENDING,
@@ -323,9 +330,17 @@ export class BookingsService {
   }
 
   /**
-   * Get single booking by ID
+   * Get single booking by ID with resource authorization
    */
-  async getBooking(bookingId: string) {
+  async getBooking(bookingId: string, requester?: { id: string; role: string }) {
+    const assertAuthorized = (b: any) => {
+      if (!requester || requester.role === Role.ADMIN) return;
+      const isOwner = b.patient_id === requester.id || b.doctor_id === requester.id;
+      if (!isOwner) {
+        throw new ForbiddenException('You are not authorized to access this booking');
+      }
+    };
+
     if (this.prisma.isConnected) {
       try {
         const booking = await this.prisma.booking.findUnique({
@@ -340,14 +355,21 @@ export class BookingsService {
             payments: true,
           },
         });
-        if (booking) return booking;
+        if (booking) {
+          assertAuthorized(booking);
+          return booking;
+        }
       } catch (err: any) {
+        if (err instanceof ForbiddenException) throw err;
         this.logger.warn(`Failed to fetch booking: ${err?.message}`);
       }
     }
 
     const mem = this.memoryBookings.get(bookingId);
-    if (mem) return mem;
+    if (mem) {
+      assertAuthorized(mem);
+      return mem;
+    }
 
     throw new NotFoundException(`Booking ${bookingId} not found`);
   }
@@ -390,12 +412,14 @@ export class BookingsService {
   }
 
   /**
-   * Create doctor availability slot
+   * Create doctor availability slot (supports ISO timestamps or frontend day + time_range)
    */
   async createSlot(doctorId: string, dto: CreateSlotDto) {
     const slotId = crypto.randomUUID();
-    const startTime = new Date(dto.start_time);
-    const endTime = new Date(dto.end_time);
+    const startTime = dto.start_time ? new Date(dto.start_time) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const endTime = dto.end_time
+      ? new Date(dto.end_time)
+      : new Date(startTime.getTime() + (dto.slot_type === 'THERAPY_MANDATORY' ? 45 : 30) * 60 * 1000);
 
     if (startTime >= endTime) {
       throw new BadRequestException('Slot start_time must be strictly before end_time');
@@ -403,7 +427,7 @@ export class BookingsService {
 
     if (this.prisma.isConnected) {
       try {
-        return await this.prisma.availabilitySlot.create({
+        const created = await this.prisma.availabilitySlot.create({
           data: {
             id: slotId,
             doctor_id: doctorId,
@@ -412,6 +436,12 @@ export class BookingsService {
             is_booked: false,
           },
         });
+        return {
+          ...created,
+          day: dto.day,
+          time_range: dto.time_range,
+          slot_type: dto.slot_type || 'GENERAL',
+        };
       } catch (err: any) {
         this.logger.warn(`Prisma createSlot error: ${err?.message}`);
       }
@@ -422,6 +452,9 @@ export class BookingsService {
       doctor_id: doctorId,
       start_time: startTime,
       end_time: endTime,
+      day: dto.day,
+      time_range: dto.time_range,
+      slot_type: dto.slot_type || 'GENERAL',
       is_booked: false,
     };
     this.memorySlots.set(slotId, memSlot);

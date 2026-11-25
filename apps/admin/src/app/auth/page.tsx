@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, ShieldCheck, ArrowRight, AlertTriangle } from 'lucide-react';
+import { adminApiFetch, saveAdminSession } from '@/lib/api-client';
 
 type AdminRbacRole = 'SUPER_ADMIN' | 'CLINICAL_VERIFIER' | 'OPS_DISPATCH' | 'SUPPORT_AGENT';
 
@@ -16,16 +17,39 @@ export default function AdminAuthPage() {
 
   const webBase = process.env.NEXT_PUBLIC_MARKETING_ORIGIN || 'http://localhost:3000';
 
-  const handleRequestOtp = (e: React.FormEvent) => {
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!staffEmail.trim()) return;
+    const res = await adminApiFetch<{ dev_otp?: string }>('/api/v1/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: staffEmail.trim(),
+        role: 'ADMIN',
+        login_mode: 'ADMIN_EMAIL',
+        rbac_role: rbacRole,
+      }),
+    });
     setOtpSent(true);
-    setOtpCode('482910');
+    setOtpCode(res.data?.dev_otp || '482910');
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.trim().length < 6) return;
+    const res = await adminApiFetch('/api/v1/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: staffEmail.trim(),
+        otp: otpCode.trim(),
+        role: 'ADMIN',
+        login_mode: 'ADMIN_EMAIL',
+        rbac_role: rbacRole,
+        totp_code: totp2fa.trim(),
+      }),
+    });
+    if (res.ok && res.data?.access_token) {
+      saveAdminSession(res.data);
+    }
     router.push('/admin/live-ops');
   };
 

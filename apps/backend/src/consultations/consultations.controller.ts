@@ -121,11 +121,16 @@ export class ConsultationsController {
   }
 
   @Get(':id')
-  async getConsultation(@Param('id') consultationId: string) {
-    return this.consultationsService.getConsultation(consultationId);
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
+  async getConsultation(
+    @Param('id') consultationId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.consultationsService.getConsultation(consultationId, user);
   }
 
   @Get(':id/prescription/pdf')
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'PARTNER', 'ADMIN')
   async downloadPrescriptionPdf(
     @Param('id') consultationId: string,
     @Res() res: Response,

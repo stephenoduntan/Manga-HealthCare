@@ -14,6 +14,7 @@ import {
   X,
   Plus,
 } from 'lucide-react';
+import { adminApiFetch } from '@/lib/api-client';
 
 export default function AdminOpsPage() {
   // Live Queue Data
@@ -75,13 +76,22 @@ export default function AdminOpsPage() {
   const [locumMdcn, setLocumMdcn] = useState('MDCN-84910');
   const [dispatchSuccess, setDispatchSuccess] = useState(false);
 
-  const handleDispatchLocum = (e: React.FormEvent) => {
+  const handleDispatchLocum = async (e: React.FormEvent) => {
     e.preventDefault();
     setDispatchSuccess(true);
+    const res = await adminApiFetch('/api/v1/admin/locums/dispatch', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: locumName,
+        phone: '+2348099887766',
+        mdcn_license_number: locumMdcn,
+      }),
+    });
+    const issuedLocumId = res.data?.locum_public_id || 'LOC-7740';
     setTimeout(() => {
       setDispatchSuccess(false);
       setIsLocumModalOpen(false);
-      alert(`Locum ID LOC-7740 issued to ${locumName} (${locumMdcn})! On-call alert sent.`);
+      alert(`Locum ID ${issuedLocumId} issued to ${locumName} (${locumMdcn})! On-call alert sent.`);
     }, 1000);
   };
 

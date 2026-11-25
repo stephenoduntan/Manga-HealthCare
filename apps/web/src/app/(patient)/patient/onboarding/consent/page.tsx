@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Lock, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { authorizedApiFetch, getAuthSession, saveAuthSession } from '@/lib/api-client';
 
 export default function PatientConsentPage() {
   const router = useRouter();
@@ -13,9 +14,28 @@ export default function PatientConsentPage() {
 
   const canProceed = telemedConsent && ndprConsent && tosConsent;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canProceed) return;
+    const res = await authorizedApiFetch('/api/v1/auth/consent', {
+      method: 'POST',
+      body: JSON.stringify({
+        telemedicine_consent: telemedConsent,
+        ndpr_consent: ndprConsent,
+        terms_accepted: tosConsent,
+      }),
+    });
+    const session = getAuthSession();
+    if (res.ok && session) {
+      saveAuthSession({
+        ...session,
+        user: {
+          ...session.user,
+          telemedicine_consent: telemedConsent,
+          ndpr_consent: ndprConsent,
+        },
+      });
+    }
     router.push('/patient/onboarding/intake');
   };
 

@@ -66,9 +66,32 @@ export class ClinicalDocsController {
   @HttpCode(HttpStatus.OK)
   async attachReferralOrLabs(
     @Param('consultationId') consultationId: string,
-    @Body() body: { referral_note?: string; lab_requests?: unknown },
+    @Body()
+    body: {
+      referral_note?: string;
+      lab_requests?: unknown;
+      lab_tests?: string;
+      imaging_referral?: string;
+      referral_center?: string;
+    },
   ) {
-    return this.consultationsService.saveReferralAndLabs(consultationId, body);
+    const normalizedNote =
+      body.referral_note ||
+      [
+        body.referral_center ? `Facility: ${body.referral_center}` : null,
+        body.imaging_referral ? `Imaging: ${body.imaging_referral}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ') ||
+      undefined;
+
+    const normalizedLabs =
+      body.lab_requests || (body.lab_tests ? { tests: body.lab_tests } : undefined);
+
+    return this.consultationsService.saveReferralAndLabs(consultationId, {
+      referral_note: normalizedNote,
+      lab_requests: normalizedLabs,
+    });
   }
 
   @Get('prescriptions/:id/download')

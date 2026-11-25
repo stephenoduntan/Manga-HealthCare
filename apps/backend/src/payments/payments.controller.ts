@@ -61,6 +61,7 @@ export class PaymentsController {
   }
 
   @Get('breakdown/:bookingId')
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
   async getFeeBreakdown(@Param('bookingId') bookingId: string) {
     return this.paymentsService.calculateFeeAndSplit(bookingId);
   }

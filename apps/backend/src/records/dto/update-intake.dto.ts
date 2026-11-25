@@ -1,6 +1,10 @@
-import { IsArray, IsDateString, IsOptional } from 'class-validator';
+import { IsArray, IsDateString, IsOptional, IsString } from 'class-validator';
 
 export class UpdateIntakeDto {
+  @IsOptional()
+  @IsString()
+  full_name?: string;
+
   @IsOptional()
   @IsDateString()
   date_of_birth?: string;
@@ -13,7 +17,18 @@ export class UpdateIntakeDto {
   allergies?: any;
 
   @IsOptional()
+  @IsString()
+  other_allergy?: string;
+
+  @IsOptional()
   existing_conditions?: any;
+
+  @IsOptional()
+  chronic_conditions?: any;
+
+  @IsOptional()
+  @IsString()
+  other_condition?: string;
 
   @IsOptional()
   current_medications?: any;

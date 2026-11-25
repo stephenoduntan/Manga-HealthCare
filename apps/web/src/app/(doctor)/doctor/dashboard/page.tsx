@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DoctorPayoutBento } from '@manga/design-system';
+import { authorizedApiFetch } from '@/lib/api-client';
 import {
   CheckCircle2,
   AlertCircle,
@@ -65,9 +66,13 @@ export default function DoctorWorkspacePage() {
     },
   ];
 
-  const handleClaimEncounter = (patientId: string) => {
+  const handleClaimEncounter = async (patientId: string) => {
+    const res = await authorizedApiFetch(`/api/v1/doctors/queue/${patientId}/claim`, {
+      method: 'POST',
+    });
+    const consultationTarget = res.data?.booking?.id || 'enc-live-01';
     setIncomingQueue((prev) => prev.filter((p) => p.id !== patientId));
-    router.push('/doctor/consultation/enc-live-01');
+    router.push(`/doctor/consultation/${consultationTarget}`);
   };
 
   return (

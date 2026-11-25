@@ -14,6 +14,7 @@ import {
   TriageStatus,
   RED_FLAG_SYMPTOMS,
 } from '@manga/api-contract';
+import { authorizedApiFetch, getAuthSession } from '@/lib/api-client';
 import {
   ShieldAlert,
   PhoneCall,
@@ -40,10 +41,16 @@ export default function PatientBookPage() {
   // 3 = Paystack / Flutterwave Checkout Modal / Screen
   const [step, setStep] = useState<1 | 1.5 | 2 | 3>(1);
 
+  const [triageClearanceToken, setTriageClearanceToken] = useState<string | null>(null);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('triage') === 'cleared') {
       setStep(2);
+    }
+    const storedToken = window.sessionStorage.getItem('manga_triage_clearance_token');
+    if (storedToken) {
+      setTriageClearanceToken(storedToken);
     }
   }, []);
 
@@ -79,13 +86,21 @@ export default function PatientBookPage() {
   };
 
   // Evaluate Chief Complaint for Ambiguity
-  const runEvaluation = (selectedCodes: string[]) => {
-    const result = evaluateTriage({
-      patient_id: patientId,
+  const runEvaluation = async (selectedCodes: string[]) => {
+    const activePatientId = getAuthSession()?.user?.public_id || patientId;
+    const payload = {
+      patient_id: activePatientId,
       selected_red_flags: selectedCodes as RedFlagCode[],
       chief_complaint: chiefComplaint,
-      clarification_response: clarificationAnswer,
+      clarification_response: clarificationAnswer || undefined,
+    };
+
+    const apiRes = await authorizedApiFetch('/api/v1/triage/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
+
+    const result = apiRes.ok && apiRes.data ? apiRes.data : evaluateTriage(payload);
 
     if (result.status === 'HALT_AND_REDIRECT') {
       setFlaggedSymptoms(result.symptoms_flagged);
@@ -93,6 +108,10 @@ export default function PatientBookPage() {
     } else if (result.status === 'ASK_CLARIFYING_QUESTION') {
       setClarificationQuestion(result.clarifying_question || 'Please provide more details on your pain.');
     } else {
+      if (result.triage_clearance_token) {
+        setTriageClearanceToken(result.triage_clearance_token);
+        window.sessionStorage.setItem('manga_triage_clearance_token', result.triage_clearance_token);
+      }
       setClarificationQuestion(null);
       setStep(2);
     }
@@ -122,13 +141,50 @@ export default function PatientBookPage() {
     }
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setIsProcessingPayment(true);
+    const bookingType =
+      specialty === 'THERAPY'
+        ? 'THERAPY_MANDATORY_SLOT'
+        : consultationMode === 'INSTANT'
+        ? 'INSTANT_QUEUE'
+        : 'SCHEDULED';
+
+    let bookingId = 'enc-live-01';
+    if (triageClearanceToken) {
+      const bookingRes = await authorizedApiFetch('/api/v1/bookings', {
+        method: 'POST',
+        body: JSON.stringify({
+          triage_clearance_token: triageClearanceToken,
+          booking_type: bookingType,
+          specialty,
+          slot_label: consultationMode === 'SCHEDULED' ? selectedSlot : undefined,
+          consultation_mode: 'VIDEO',
+          is_followup: isFollowUp,
+        }),
+      });
+      if (bookingRes.ok && bookingRes.data?.booking?.id) {
+        bookingId = bookingRes.data.booking.id;
+        const payInit = await authorizedApiFetch('/api/v1/payments/initialize', {
+          method: 'POST',
+          body: JSON.stringify({
+            booking_id: bookingId,
+            provider: 'PAYSTACK',
+            channel: paymentMethod === 'TRANSFER' ? 'BANK_TRANSFER' : paymentMethod,
+            is_followup: isFollowUp,
+          }),
+        });
+        if (payInit.ok && payInit.data?.reference) {
+          await authorizedApiFetch(`/api/v1/payments/verify/${payInit.data.reference}`);
+        }
+      }
+    }
+
     setTimeout(() => {
       setIsProcessingPayment(false);
       setPaymentSuccess(true);
       setTimeout(() => {
-        router.push('/patient/consultation/enc-live-01');
+        router.push(`/patient/consultation/${bookingId}`);
       }, 1500);
     }, 1200);
   };

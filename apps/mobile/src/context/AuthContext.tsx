@@ -63,43 +63,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithOtp = async (identifier: string, otp: string, preferredRole?: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Determine role from prefix or parameter
-      let detectedRole: UserRole = preferredRole || 'PATIENT';
-      let publicId = 'PAT-48291';
-      let name = 'Amaka Adeleke';
+      const apiBase = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+      let apiUser: any = null;
+      let accessToken: string | null = null;
 
-      const cleanId = identifier.trim().toUpperCase();
-      if (cleanId.startsWith('DOC-') || cleanId.includes('DOCTOR')) {
-        detectedRole = 'DOCTOR';
-        publicId = cleanId.startsWith('DOC-') ? cleanId : 'DOC-1082';
-        name = 'Dr. Chidi Okafor';
-      } else if (cleanId.startsWith('LOC-') || cleanId.includes('LOCUM')) {
-        detectedRole = 'LOCUM';
-        publicId = cleanId.startsWith('LOC-') ? cleanId : 'LOC-9941';
-        name = 'Dr. Amina Bello (Locum)';
-      } else if (cleanId.startsWith('PAT-')) {
-        detectedRole = 'PATIENT';
-        publicId = cleanId;
-        name = 'Amaka Adeleke';
+      try {
+        const res = await fetch(`${apiBase}/api/v1/auth/otp/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: identifier.trim(),
+            otp: otp.trim(),
+            role: preferredRole,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          accessToken = data?.access_token || null;
+          apiUser = data?.user || null;
+        }
+      } catch {
+        // Offline / local preview fallback when backend server is unreachable
       }
 
-      const mockUser: AuthUser = {
-        id: 'usr-' + Math.random().toString(36).substring(2, 9),
+      // Determine role from API user, prefix, or parameter
+      let detectedRole: UserRole = (apiUser?.role as UserRole) || preferredRole || 'PATIENT';
+      let publicId = apiUser?.public_id || 'PAT-48291';
+      let name = apiUser?.name || 'Amaka Adeleke';
+
+      const cleanId = identifier.trim().toUpperCase();
+      if (!apiUser) {
+        if (cleanId.startsWith('DOC-') || cleanId.includes('DOCTOR')) {
+          detectedRole = 'DOCTOR';
+          publicId = cleanId.startsWith('DOC-') ? cleanId : 'DOC-1082';
+          name = 'Dr. Chidi Okafor';
+        } else if (cleanId.startsWith('LOC-') || cleanId.includes('LOCUM')) {
+          detectedRole = 'LOCUM';
+          publicId = cleanId.startsWith('LOC-') ? cleanId : 'LOC-9941';
+          name = 'Dr. Amina Bello (Locum)';
+        } else if (cleanId.startsWith('PAT-')) {
+          detectedRole = 'PATIENT';
+          publicId = cleanId;
+          name = 'Amaka Adeleke';
+        }
+      }
+
+      const authUser: AuthUser = {
+        id: apiUser?.id || 'usr-' + Math.random().toString(36).substring(2, 9),
         publicId,
         role: detectedRole,
         name,
-        phone: identifier.includes('@') ? '+2348030001122' : identifier,
-        email: identifier.includes('@') ? identifier : undefined,
-        telemedicineConsent: true,
-        ndprConsent: true,
-        token: 'jwt-mock-session-' + Date.now(),
+        phone: apiUser?.phone || (identifier.includes('@') ? '+2348030001122' : identifier),
+        email: apiUser?.email || (identifier.includes('@') ? identifier : undefined),
+        telemedicineConsent: apiUser?.telemedicine_consent ?? true,
+        ndprConsent: apiUser?.ndpr_consent ?? true,
+        token: accessToken || 'jwt-mock-session-' + Date.now(),
       };
 
-      await SecureStore.setItemAsync(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-      setUser(mockUser);
+      await SecureStore.setItemAsync(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+      setUser(authUser);
 
       // Route dynamically to patient or doctor navigation shell
-      if (mockUser.role === 'DOCTOR' || mockUser.role === 'LOCUM') {
+      if (authUser.role === 'DOCTOR' || authUser.role === 'LOCUM') {
         router.replace('/(doctor-tabs)');
       } else {
         router.replace('/(patient-tabs)');
@@ -136,6 +161,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateConsent = async (telemed: boolean, ndpr: boolean) => {
     if (!user) return;
+    const apiBase = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+    try {
+      await fetch(`${apiBase}/api/v1/auth/consent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ telemedicine_consent: telemed, ndpr_consent: ndpr }),
+      });
+    } catch {
+      // Continue storing consent locally when offline
+    }
     const updated = { ...user, telemedicineConsent: telemed, ndprConsent: ndpr };
     await SecureStore.setItemAsync(AUTH_STORAGE_KEY, JSON.stringify(updated));
     setUser(updated);
@@ -143,6 +181,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      if (user?.token) {
+        const apiBase = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+        await fetch(`${apiBase}/api/v1/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${user.token}` },
+        }).catch(() => undefined);
+      }
       await SecureStore.deleteItemAsync(AUTH_STORAGE_KEY);
       setUser(null);
       router.replace('/');

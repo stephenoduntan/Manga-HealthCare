@@ -13,6 +13,8 @@ export interface JwtPayload {
   email?: string;
   telemedicine_consent: boolean;
   ndpr_consent: boolean;
+  verification_status?: string;
+  rbac_role?: string;
 }
 
 @Injectable()
@@ -53,6 +55,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             telemedicine_consent: user.telemedicine_consent,
             ndpr_consent: user.ndpr_consent,
             is_locum: user.doctor_profile?.is_locum ?? (user.role === 'LOCUM'),
+            verification_status: user.doctor_profile?.verification_status,
+            rbac_role: payload.rbac_role,
           };
         }
       } catch {
@@ -70,6 +74,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       telemedicine_consent: payload.telemedicine_consent,
       ndpr_consent: payload.ndpr_consent,
       is_locum: payload.role === 'LOCUM',
+      verification_status: payload.verification_status,
+      rbac_role: payload.rbac_role,
     };
   }
 }
