@@ -4,7 +4,11 @@
     "target": "ES2020",
     "declaration": false,
     "declarationMap": false,
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -22,14 +26,33 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@manga/design-system": ["../../packages/design-system/src/index.ts"],
-      "@manga/design-system/tokens": ["../../packages/design-system/src/tokens/index.ts"],
-      "@manga/design-system/native": ["../../packages/design-system/src/native/index.ts"],
-      "@manga/api-contract": ["../../packages/api-contract/src/index.ts"],
-      "@manga/api-contract/triage": ["../../packages/api-contract/src/triage.contract.ts"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@manga/design-system": [
+        "../../packages/design-system/src/index.ts"
+      ],
+      "@manga/design-system/tokens": [
+        "../../packages/design-system/src/tokens/index.ts"
+      ],
+      "@manga/design-system/native": [
+        "../../packages/design-system/src/native/index.ts"
+      ],
+      "@manga/api-contract": [
+        "../../packages/api-contract/src/index.ts"
+      ],
+      "@manga/api-contract/triage": [
+        "../../packages/api-contract/src/triage.contract.ts"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

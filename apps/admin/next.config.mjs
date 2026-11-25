@@ -7,6 +7,20 @@ const packagesDir = path.resolve(__dirname, '../../packages');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@manga/design-system', '@manga/api-contract'],
+  async rewrites() {
+    return [
+      { source: '/admin', destination: '/' },
+      { source: '/admin/live-ops', destination: '/' },
+      { source: '/live-ops', destination: '/' },
+      { source: '/admin/verifications', destination: '/doctors' },
+      { source: '/verifications', destination: '/doctors' },
+      { source: '/admin/compliance', destination: '/redirects' },
+      { source: '/compliance', destination: '/redirects' },
+      { source: '/admin/disputes', destination: '/disputes' },
+      { source: '/admin/analytics', destination: '/analytics' },
+      { source: '/admin/auth', destination: '/auth' },
+    ];
+  },
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
