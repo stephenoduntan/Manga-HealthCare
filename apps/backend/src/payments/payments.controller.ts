@@ -1,13 +1,13 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
-  Param,
-  UseGuards,
+  Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
@@ -24,9 +24,16 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('initialize')
+  @Roles('PATIENT', 'ADMIN')
   @HttpCode(HttpStatus.OK)
   async initializePayment(@Body() dto: InitializePaymentDto) {
     return this.paymentsService.initializePayment(dto);
+  }
+
+  @Get('verify/:reference')
+  @Roles('PATIENT', 'ADMIN')
+  async verifyPaymentByParam(@Param('reference') reference: string) {
+    return this.paymentsService.verifyPayment({ reference });
   }
 
   @Post('verify')

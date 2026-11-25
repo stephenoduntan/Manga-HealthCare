@@ -1,8 +1,11 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { evaluateTriage, TriageEvaluationInput, RedFlagCode } from '@manga/api-contract';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { RedisService } from '../common/redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.module';
 import { EvaluateTriageDto } from './dto/evaluate-triage.dto';
+import * as crypto from 'crypto';
 
 export interface EmergencyFacility {
   name: string;
@@ -65,6 +68,8 @@ export class TriageService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    @Optional() private redis?: RedisService,
+    @Optional() private notifications?: NotificationsService,
   ) {}
 
   /**
@@ -112,10 +117,11 @@ export class TriageService {
 
       this.memoryRedirectLogs.push({ id: `erl_${Date.now()}`, ...logData, raw_patient_id: patientId });
 
-      // 2. Emit Real-time alert for Admin/Ops
+      // 2. Emit Real-time alert for Admin/Ops + FCM
       this.logger.error(
         `[CRITICAL EMERGENCY REDIRECT] Patient: ${patientId} | Red Flags: [${evaluation.symptoms_flagged.join(', ')}] | Action: EMERGENCY AMBULANCE REDIRECT (112/767)`,
       );
+      void this.notifications?.alertAdminEmergencyTriage(patientId, evaluation.symptoms_flagged);
 
       return {
         ...evaluation,
@@ -139,15 +145,18 @@ export class TriageService {
     }
 
     // Branch: CLEAR_TO_BOOK
-    // Issue signed short-lived triage clearance token (30-minute expiry)
+    // Issue signed short-lived triage clearance token (15-minute expiry + Redis JTI)
+    const jti = crypto.randomUUID();
     const clearancePayload = {
       type: 'TRIAGE_CLEARANCE',
+      jti,
       patient_id: patientId,
       chief_complaint: dto.chief_complaint,
       cleared_at: new Date().toISOString(),
     };
 
-    const token = this.jwtService.sign(clearancePayload, { expiresIn: '30m' });
+    const token = this.jwtService.sign(clearancePayload, { expiresIn: '15m' });
+    await this.redis?.set(`triage_clearance:${jti}`, patientId, 900);
 
     this.logger.log(`[TRIAGE CLEARED] Patient: ${patientId} | Clearance token issued.`);
 

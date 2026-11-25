@@ -1,15 +1,15 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
-  Param,
-  UseGuards,
-  UseInterceptors,
-  UploadedFile,
-  Res,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -21,11 +21,27 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { AuditTarget } from '../common/decorators/audit-target.decorator';
 
 @Controller('api/v1/consultations')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ConsultationsController {
   constructor(private readonly consultationsService: ConsultationsService) {}
+
+  @Post(':bookingId/start')
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
+  @AuditTarget('consultations')
+  @HttpCode(HttpStatus.OK)
+  async startSessionByBookingId(
+    @Param('bookingId') bookingId: string,
+    @Body() body: Partial<StartConsultationDto>,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.consultationsService.startSession(
+      { booking_id: bookingId, mode: body?.mode },
+      userId,
+    );
+  }
 
   @Post('start')
   @HttpCode(HttpStatus.OK)
@@ -34,6 +50,36 @@ export class ConsultationsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.consultationsService.startSession(dto, userId);
+  }
+
+  @Get(':id/patient-context')
+  @Roles('DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
+  @AuditTarget('patient_profiles')
+  async getPatientContext(
+    @Param('id') consultationId: string,
+    @CurrentUser('id') doctorId: string,
+  ) {
+    return this.consultationsService.getPatientContext(consultationId, doctorId);
+  }
+
+  @Post(':id/attachments')
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
+  @UseInterceptors(FileInterceptor('image'))
+  @AuditTarget('consultations')
+  @HttpCode(HttpStatus.OK)
+  async handleAttachment(
+    @Param('id') consultationId: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: { filename?: string; content_type?: string },
+  ) {
+    if (file) {
+      return this.consultationsService.uploadImage(consultationId, file);
+    }
+    return this.consultationsService.requestAttachmentPresignedUrl(
+      consultationId,
+      body?.filename || 'clinical-attachment.jpg',
+      body?.content_type || 'image/jpeg',
+    );
   }
 
   @Post(':id/upload-image')

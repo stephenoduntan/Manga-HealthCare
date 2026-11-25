@@ -3,11 +3,16 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { ConsultationMode, BookingStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PdfService } from './pdf.service';
+import { DailyAdapter } from '../integrations/daily.adapter';
+import { S3Adapter } from '../integrations/s3.adapter';
+import { ResendAdapter } from '../integrations/resend.adapter';
+import { NotificationsService } from '../notifications/notifications.module';
 import { StartConsultationDto } from './dto/start-consultation.dto';
 import { SaveNotesDto } from './dto/save-notes.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
@@ -26,6 +31,10 @@ export class ConsultationsService {
     private prisma: PrismaService,
     private storageService: StorageService,
     private pdfService: PdfService,
+    @Optional() private dailyAdapter?: DailyAdapter,
+    @Optional() private s3Adapter?: S3Adapter,
+    @Optional() private resendAdapter?: ResendAdapter,
+    @Optional() private notifications?: NotificationsService,
   ) {}
 
   /**
@@ -101,9 +110,26 @@ export class ConsultationsService {
 
     // Generate Agora / Daily.co secure call token & room URL
     const roomId = `manga-room-${bookingId.slice(0, 8)}`;
-    const roomUrl = `https://manga-healthcare.daily.co/${roomId}`;
-    const callToken = `call_token_${crypto.randomBytes(16).toString('hex')}`;
+    let roomUrl = `https://manga-healthcare.daily.co/${roomId}`;
+    let callToken = `call_token_${crypto.randomBytes(16).toString('hex')}`;
+    if (this.dailyAdapter) {
+      const room = await this.dailyAdapter.createRoom(roomId);
+      roomUrl = room.room_url;
+      callToken = await this.dailyAdapter.createMeetingToken(
+        room.room_name,
+        currentUserId,
+        consultation?.booking?.doctor_id === currentUserId,
+      );
+    }
     const chatFallbackChannel = `chat_channel_${bookingId.slice(0, 8)}`;
+
+    if (consultation?.booking?.doctor_id === currentUserId && consultation?.booking?.patient?.fcm_token) {
+      void this.notifications?.notifyDoctorJoined(
+        consultation.booking.patient.fcm_token,
+        bookingId,
+        consultation?.booking?.doctor?.name || 'Your clinician',
+      );
+    }
 
     this.logger.log(`[CONSULTATION STARTED] Room: ${roomId} | Mode: ${mode} | User: ${currentUserId}`);
 
@@ -288,9 +314,26 @@ export class ConsultationsService {
       items: dto.items,
     });
 
-    // Save PDF
+    // Save PDF (via S3Adapter when configured, otherwise local StorageService)
     const pdfFileName = `prescription_${prescriptionId}.pdf`;
-    const pdfUrl = await this.storageService.saveFile('prescriptions', pdfFileName, pdfBuffer);
+    const pdfUrl = this.s3Adapter
+      ? await this.s3Adapter.uploadEncryptedFile(
+          'prescriptions',
+          pdfFileName,
+          pdfBuffer,
+          'application/pdf',
+        )
+      : await this.storageService.saveFile('prescriptions', pdfFileName, pdfBuffer);
+
+    const patientEmail = consultation?.booking?.patient?.email;
+    if (patientEmail && this.resendAdapter) {
+      void this.resendAdapter.sendEmail({
+        to: patientEmail,
+        subject: `Your Manga Healthcare E-Prescription (${prescriptionId.slice(0, 8)})`,
+        html: `<p>Your E-Prescription from <strong>${doctorName}</strong> is attached.</p>`,
+        attachments: [{ filename: pdfFileName, content: pdfBuffer }],
+      });
+    }
 
     let prescription: any = null;
 
@@ -445,5 +488,144 @@ export class ConsultationsService {
     }
 
     return buf;
+  }
+
+  async getPatientContext(consultationId: string, doctorId: string) {
+    if (this.prisma.isConnected) {
+      const consultation = await this.prisma.consultation.findUnique({
+        where: { id: consultationId },
+        include: {
+          booking: {
+            include: {
+              patient: {
+                include: {
+                  patient_profile: true,
+                  patient_bookings: {
+                    where: { status: BookingStatus.COMPLETED },
+                    include: { consultation: { include: { prescriptions: true } } },
+                    orderBy: { created_at: 'desc' },
+                    take: 5,
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!consultation) {
+        throw new NotFoundException(`Consultation ${consultationId} not found`);
+      }
+
+      const patient = consultation.booking.patient;
+      await this.prisma.auditLog.create({
+        data: {
+          user_id: doctorId,
+          action: 'READ_PATIENT_CONTEXT_IN_SESSION',
+          target_record: `PATIENT:${patient.public_id}`,
+          timestamp: new Date(),
+        },
+      });
+
+      return {
+        consultation_id: consultationId,
+        patient: {
+          id: patient.id,
+          public_id: patient.public_id,
+          name: patient.name,
+          preferred_languages: patient.patient_profile?.preferred_languages || ['English'],
+          allergies: patient.patient_profile?.allergies || [],
+          existing_conditions: patient.patient_profile?.existing_conditions || [],
+          current_medications: patient.patient_profile?.current_medications || [],
+        },
+        prior_visits: patient.patient_bookings.map((b) => ({
+          booking_id: b.id,
+          date: b.created_at,
+          notes: b.consultation?.notes || null,
+          prescriptions: b.consultation?.prescriptions || [],
+        })),
+      };
+    }
+
+    const mem = this.memoryConsultations.get(consultationId);
+    if (!mem) {
+      throw new NotFoundException(`Consultation ${consultationId} not found`);
+    }
+    return {
+      consultation_id: consultationId,
+      patient: {
+        id: mem.booking_id,
+        public_id: 'PAT-DEMO',
+        name: 'Patient',
+        preferred_languages: ['English'],
+        allergies: [],
+        existing_conditions: [],
+        current_medications: [],
+      },
+      prior_visits: [],
+    };
+  }
+
+  async requestAttachmentPresignedUrl(
+    consultationId: string,
+    filename: string,
+    contentType = 'image/jpeg',
+  ) {
+    const ext = path.extname(filename) || '.jpg';
+    const cleanName = `attachment_${consultationId.slice(0, 8)}_${Date.now()}${ext}`;
+    if (this.s3Adapter) {
+      return {
+        consultation_id: consultationId,
+        ...(await this.s3Adapter.createPresignedUploadUrl('consultations', cleanName, contentType)),
+      };
+    }
+    return {
+      consultation_id: consultationId,
+      upload_url: `/uploads/consultations/${cleanName}`,
+      file_key: `consultations/${cleanName}`,
+      expires_in_seconds: 300,
+      s3_enabled: false,
+    };
+  }
+
+  async saveReferralAndLabs(
+    consultationId: string,
+    body: { referral_note?: string; lab_requests?: unknown },
+  ) {
+    if (this.prisma.isConnected) {
+      const updated = await this.prisma.consultation.update({
+        where: { id: consultationId },
+        data: {
+          referral_note: body.referral_note ?? undefined,
+          lab_requests: (body.lab_requests as any) ?? undefined,
+        },
+      });
+      return {
+        success: true,
+        consultation_id: updated.id,
+        referral_note: updated.referral_note,
+        lab_requests: updated.lab_requests,
+      };
+    }
+
+    const mem = this.memoryConsultations.get(consultationId);
+    if (!mem) {
+      throw new NotFoundException(`Consultation ${consultationId} not found`);
+    }
+    if (body.referral_note !== undefined) mem.referral_note = body.referral_note;
+    if (body.lab_requests !== undefined) mem.lab_requests = body.lab_requests;
+    return {
+      success: true,
+      consultation_id: consultationId,
+      referral_note: mem.referral_note,
+      lab_requests: mem.lab_requests,
+    };
+  }
+
+  async getPrescriptionRecord(prescriptionId: string) {
+    return (
+      this.memoryPrescriptions.get(prescriptionId) ||
+      Array.from(this.memoryPrescriptions.values()).find((p) => p.id === prescriptionId) ||
+      null
+    );
   }
 }

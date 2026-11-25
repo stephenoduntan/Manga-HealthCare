@@ -76,10 +76,12 @@ model User {
   name                 String
   phone                String   @unique
   email                String?  @unique
-  auth_id              String   @unique // Firebase or Auth0 external identity ID
-  telemedicine_consent Boolean  @default(false)
-  ndpr_consent         Boolean  @default(false)
-  created_at           DateTime @default(now())
+  auth_id              String    @unique // Firebase or Auth0 external identity ID
+  telemedicine_consent Boolean   @default(false)
+  ndpr_consent         Boolean   @default(false)
+  consent_accepted_at  DateTime?
+  fcm_token            String?
+  created_at           DateTime  @default(now())
 
   // Relations
   patient_profile      PatientProfile?
@@ -116,6 +118,8 @@ model DoctorProfile {
   mdcn_license_number    String             @unique // Mandatory MDCN license verification
   medical_degree_details String             // Medical degree details and qualifications
   verification_status    VerificationStatus @default(PENDING)
+  is_online              Boolean            @default(false)
+  rejection_reason       String?            @db.Text
   bio                    String?            @db.Text
   languages              String[]           @default(["English"])
   consultation_fee       Decimal            @db.Decimal(10, 2)
@@ -174,6 +178,8 @@ model Consultation {
   uploaded_images String[]         @default([]) // In-session images (rash photo, diagnostic images)
   referral_note   String?          @db.Text
   lab_requests    Json?            // Structured lab test requests
+  rating          Int?             // Post-consultation patient rating (1-5)
+  feedback        String?          @db.Text
   created_at      DateTime         @default(now())
 
   booking         Booking          @relation(fields: [booking_id], references: [id], onDelete: Cascade)
@@ -186,8 +192,11 @@ model Prescription {
   id                String       @id @default(uuid()) @db.Uuid
   consultation_id   String       @db.Uuid
   items             Json         // Array of { drug_name, dosage, frequency, duration, instructions }
-  generated_pdf_url String?      // Shareable / printable S3 encrypted PDF url
-  created_at        DateTime     @default(now())
+  generated_pdf_url       String?      // Shareable / printable S3 encrypted PDF url
+  is_fulfilled            Boolean      @default(false)
+  fulfilled_at            DateTime?
+  fulfilled_by_partner_id String?      @db.Uuid
+  created_at              DateTime     @default(now())
 
   consultation      Consultation @relation(fields: [consultation_id], references: [id], onDelete: Cascade)
 

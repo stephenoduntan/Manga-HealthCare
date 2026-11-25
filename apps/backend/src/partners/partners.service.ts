@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 
 @Injectable()
 export class PartnersService {
   private readonly logger = new Logger(PartnersService.name);
+  private memoryFulfilled = new Map<string, { fulfilled_at: Date; partner_id: string }>();
 
   constructor(private prisma: PrismaService) {}
 
@@ -44,6 +51,12 @@ export class PartnersService {
     if (!patient) {
       throw new NotFoundException(
         `Patient with ID ${normalizedPublicId} not found or no records available.`,
+      );
+    }
+
+    if (!patient.ndpr_consent) {
+      throw new ForbiddenException(
+        `Patient ${normalizedPublicId} has not granted active NDPR record-sharing consent.`,
       );
     }
 
@@ -90,6 +103,8 @@ export class PartnersService {
             },
             items: rx.items,
             download_pdf_url: rx.generated_pdf_url,
+            is_fulfilled: rx.is_fulfilled ?? this.memoryFulfilled.has(rx.id),
+            fulfilled_at: rx.fulfilled_at ?? null,
           });
         }
       }
@@ -127,6 +142,68 @@ export class PartnersService {
         logged_at: new Date().toISOString(),
         compliance_notice:
           'Access to this record is logged and monitored in compliance with the Nigeria Data Protection Regulation (NDPR). Unauthorized dissemination is strictly prohibited.',
+      },
+    };
+  }
+
+  /**
+   * Marks an e-prescription as dispensed/fulfilled by a Partner Pharmacy to prevent duplicate dispensing
+   */
+  async fulfillPrescription(prescriptionId: string, partnerUserId: string) {
+    const fulfilledAt = new Date();
+
+    if (this.prisma.isConnected) {
+      const existing = await this.prisma.prescription.findUnique({
+        where: { id: prescriptionId },
+      });
+      if (!existing) {
+        throw new NotFoundException(`Prescription ${prescriptionId} not found`);
+      }
+      if (existing.is_fulfilled) {
+        throw new BadRequestException(
+          `Prescription ${prescriptionId} was already fulfilled and cannot be dispensed again.`,
+        );
+      }
+
+      const updated = await this.prisma.prescription.update({
+        where: { id: prescriptionId },
+        data: {
+          is_fulfilled: true,
+          fulfilled_at: fulfilledAt,
+          fulfilled_by_partner_id: partnerUserId,
+        },
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          user_id: partnerUserId,
+          action: 'PRESCRIPTION_FULFILLED_PARTNER',
+          target_record: `PRESCRIPTION:${prescriptionId}`,
+          timestamp: fulfilledAt,
+        },
+      });
+
+      return { success: true, prescription: updated };
+    }
+
+    if (this.memoryFulfilled.has(prescriptionId)) {
+      throw new BadRequestException(
+        `Prescription ${prescriptionId} was already fulfilled and cannot be dispensed again.`,
+      );
+    }
+
+    this.memoryFulfilled.set(prescriptionId, {
+      fulfilled_at: fulfilledAt,
+      partner_id: partnerUserId,
+    });
+
+    return {
+      success: true,
+      prescription: {
+        id: prescriptionId,
+        is_fulfilled: true,
+        fulfilled_at: fulfilledAt,
+        fulfilled_by_partner_id: partnerUserId,
       },
     };
   }

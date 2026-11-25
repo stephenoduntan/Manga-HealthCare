@@ -22,12 +22,14 @@ export class AuditInterceptor implements NestInterceptor {
     // Check if the route accesses audited clinical or patient records
     const isAuditedRoute =
       url.includes('/consultations') ||
+      url.includes('/clinical-docs') ||
       url.includes('/records') ||
       url.includes('/partners') ||
       url.includes('/prescriptions') ||
       url.includes('/patients') ||
       url.includes('/triage') ||
-      url.includes('/bookings');
+      url.includes('/bookings') ||
+      url.includes('/doctors');
 
     return next.handle().pipe(
       tap(async () => {
@@ -74,3 +76,5 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 }
+
+export { AuditInterceptor as NdprAuditLogInterceptor };

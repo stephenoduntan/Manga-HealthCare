@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import {
   PaymentProvider,
@@ -10,8 +11,12 @@ import {
   PayoutCycleStatus,
   PaymentStatus,
   BookingStatus,
+  BookingType,
 } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { PaystackAdapter } from '../integrations/paystack.adapter';
+import { FlutterwaveAdapter } from '../integrations/flutterwave.adapter';
+import { NotificationsService } from '../notifications/notifications.module';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import * as crypto from 'crypto';
@@ -23,7 +28,12 @@ export class PaymentsService {
   // In-memory fallback
   private memoryPayments = new Map<string, any>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private paystackAdapter?: PaystackAdapter,
+    @Optional() private flutterwaveAdapter?: FlutterwaveAdapter,
+    @Optional() private notifications?: NotificationsService,
+  ) {}
 
   /**
    * Calculates consultation fee (Standard vs. 14-day Follow-up) and commission split
@@ -122,11 +132,30 @@ export class PaymentsService {
       this.memoryPayments.set(reference, paymentRecord);
     }
 
-    // Generate Hosted Checkout URL
-    const checkoutUrl =
+    // Generate Hosted Checkout URL via Gateway Adapter
+    let checkoutUrl =
       dto.provider === PaymentProvider.PAYSTACK
         ? `https://checkout.paystack.com/${reference}`
         : `https://checkout.flutterwave.com/v3/hosted/pay/${reference}`;
+
+    if (dto.provider === PaymentProvider.PAYSTACK && this.paystackAdapter) {
+      const psInit = await this.paystackAdapter.initializeTransaction({
+        email: 'patient@mangahealthcare.com',
+        amountNaira: feeSplit.total_amount,
+        reference,
+        metadata: { booking_id: dto.booking_id },
+      });
+      checkoutUrl = psInit.authorization_url;
+    } else if (dto.provider === PaymentProvider.FLUTTERWAVE && this.flutterwaveAdapter) {
+      const flwInit = await this.flutterwaveAdapter.initializePayment({
+        email: 'patient@mangahealthcare.com',
+        phone: '+2348000000000',
+        name: 'Manga Patient',
+        amountNaira: feeSplit.total_amount,
+        txRef: reference,
+      });
+      checkoutUrl = flwInit.link;
+    }
 
     this.logger.log(
       `[PAYMENT INIT] Provider: ${dto.provider} | Ref: ${reference} | Amount: ₦${feeSplit.total_amount} (Doctor: ₦${feeSplit.doctor_accrued_fee}, Platform: ₦${feeSplit.platform_commission})`,
@@ -166,22 +195,36 @@ export class PaymentsService {
             data: { status: PaymentRecordStatus.SUCCESS },
           });
 
-          // Update booking payment status
-          await this.prisma.booking.update({
+          const nextBookingStatus =
+            payment.booking.booking_type === BookingType.INSTANT_QUEUE
+              ? BookingStatus.IN_QUEUE
+              : payment.booking.status === BookingStatus.PENDING
+              ? BookingStatus.CONFIRMED
+              : payment.booking.status;
+
+          // Update booking payment status & promote to IN_QUEUE / CONFIRMED
+          const updatedBooking = await this.prisma.booking.update({
             where: { id: payment.booking_id },
             data: {
               payment_status: PaymentStatus.PAID,
-              status:
-                payment.booking.status === BookingStatus.PENDING
-                  ? BookingStatus.CONFIRMED
-                  : payment.booking.status,
+              status: nextBookingStatus,
             },
+            include: { patient: true },
+          });
+
+          await this.notifications?.notifyBookingConfirmed({
+            phone: updatedBooking.patient?.phone,
+            email: updatedBooking.patient?.email,
+            fcmToken: updatedBooking.patient?.fcm_token,
+            bookingId: updatedBooking.id,
+            mode: String(updatedBooking.booking_type),
           });
 
           return {
             success: true,
             status: PaymentRecordStatus.SUCCESS,
             payment: updatedPayment,
+            booking_status: nextBookingStatus,
             message: 'Payment verified successfully. Consultation confirmed.',
           };
         }

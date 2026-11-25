@@ -1,12 +1,14 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
-  Param,
-  UseGuards,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { QueueService } from './queue.service';
@@ -14,7 +16,10 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { TriageClearanceGuard } from '../common/guards/triage-clearance.guard';
+import { NdprConsentGuard } from '../common/guards/ndpr-consent.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequireConsent } from '../common/decorators/ndpr-consent.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
@@ -26,8 +31,26 @@ export class BookingsController {
     private readonly queueService: QueueService,
   ) {}
 
+  @Get('doctors')
+  @Roles('PATIENT', 'ADMIN')
+  async listVerifiedDoctors(
+    @Query('specialty') specialty?: string,
+    @Query('language') language?: string,
+    @Query('availability') availability?: string,
+  ) {
+    return this.bookingsService.listVerifiedDoctors({ specialty, language, availability });
+  }
+
+  @Public()
+  @Get('doctors/:doctorId/slots')
+  async getDoctorSlotsByDoctorRoute(@Param('doctorId') doctorId: string) {
+    return this.bookingsService.getDoctorSlots(doctorId);
+  }
+
   @Post()
   @Roles('PATIENT', 'ADMIN')
+  @UseGuards(NdprConsentGuard, TriageClearanceGuard)
+  @RequireConsent()
   @HttpCode(HttpStatus.CREATED)
   async createBooking(
     @CurrentUser('id') patientId: string,
@@ -71,7 +94,18 @@ export class BookingsController {
   }
 
   @Get(':id')
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
   async getBooking(@Param('id') id: string) {
     return this.bookingsService.getBooking(id);
+  }
+
+  @Patch(':id/cancel')
+  @Roles('PATIENT', 'DOCTOR', 'LOCUM', 'THERAPIST', 'ADMIN')
+  @HttpCode(HttpStatus.OK)
+  async cancelBooking(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.bookingsService.cancelBooking(id, user.id, user.role);
   }
 }

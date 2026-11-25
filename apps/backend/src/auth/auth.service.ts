@@ -2,13 +2,18 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Role, User, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { RedisService } from '../common/redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.module';
+import { generatePublicId } from '../common/utils/public-id.util';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ConsentDto } from './dto/consent.dto';
@@ -25,34 +30,15 @@ export class AuthService {
     private prisma: PrismaService,
     private redis: RedisService,
     private jwtService: JwtService,
+    @Optional() private notifications?: NotificationsService,
   ) {}
 
-  /**
-   * Helper to normalize phone, email, or public ID
-   */
   private normalizeIdentifier(raw: string): string {
     return raw.trim().toLowerCase();
   }
 
-  /**
-   * Generates public ID following PAT-XXXX, DOC-XXXX, LOC-XXXX, ADM-XXXX, PRT-XXXX
-   */
   generatePublicId(role: Role, isLocum = false): string {
-    let prefix = 'PAT';
-    if (role === Role.DOCTOR) {
-      prefix = isLocum ? 'LOC' : 'DOC';
-    } else if (role === Role.LOCUM) {
-      prefix = 'LOC';
-    } else if (role === Role.THERAPIST) {
-      prefix = 'DOC';
-    } else if (role === Role.ADMIN) {
-      prefix = 'ADM';
-    } else if (role === Role.PARTNER) {
-      prefix = 'PRT';
-    }
-
-    const randomSuffix = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6 chars
-    return `${prefix}-${randomSuffix}`;
+    return generatePublicId(role, isLocum);
   }
 
   /**
@@ -61,6 +47,17 @@ export class AuthService {
   async requestOtp(dto: RequestOtpDto) {
     const rawIdentifier = dto.identifier.trim();
     const normalized = this.normalizeIdentifier(rawIdentifier);
+
+    // Rate-limit OTP generation in Redis (max 10 attempts per 10 minutes)
+    const rateKey = `otp_rate:${normalized}`;
+    const currentAttempts = Number((await this.redis.get(rateKey)) || '0');
+    if (currentAttempts >= 10) {
+      throw new HttpException(
+        'Too many OTP requests. Please wait before requesting another code.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    await this.redis.set(rateKey, String(currentAttempts + 1), 600);
 
     // Look up if user already exists
     let existingUser: any = null;
@@ -100,6 +97,13 @@ export class AuthService {
 
     // Store in Redis/memory with 10 minute TTL (600s)
     await this.redis.set(otpKey, generatedOtp, 600);
+
+    await this.notifications?.dispatchOtp(
+      rawIdentifier,
+      generatedOtp,
+      existingUser?.phone,
+      existingUser?.email,
+    );
 
     this.logger.log(
       `[OTP Generated] Identifier: ${rawIdentifier} | OTP: ${generatedOtp} (Expires in 10m)`,
@@ -262,7 +266,7 @@ export class AuthService {
       }
     }
 
-    // Generate JWT
+    // Generate JWT + Refresh Token stored in Redis
     const payload = {
       sub: user.id,
       public_id: user.public_id,
@@ -272,14 +276,22 @@ export class AuthService {
       email: user.email,
       telemedicine_consent: user.telemedicine_consent,
       ndpr_consent: user.ndpr_consent,
+      verification_status: user.doctor_profile?.verification_status,
     };
 
     const token = this.jwtService.sign(payload);
+    const refreshToken = `rt_${crypto.randomBytes(32).toString('hex')}`;
+    await this.redis.set(
+      `refresh:${refreshToken}`,
+      JSON.stringify({ user_id: user.id, payload }),
+      30 * 24 * 60 * 60,
+    );
 
     return {
       access_token: token,
+      refresh_token: refreshToken,
       token_type: 'Bearer',
-      expires_in: '24h',
+      expires_in: '15m',
       user: {
         id: user.id,
         public_id: user.public_id,
@@ -295,6 +307,34 @@ export class AuthService {
     };
   }
 
+  async refreshAccessToken(refreshToken: string) {
+    const rawSession = await this.redis.get(`refresh:${refreshToken}`);
+    if (!rawSession) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const session = JSON.parse(rawSession) as { user_id: string; payload: Record<string, unknown> };
+    await this.redis.del(`refresh:${refreshToken}`);
+
+    const newRefreshToken = `rt_${crypto.randomBytes(32).toString('hex')}`;
+    await this.redis.set(
+      `refresh:${newRefreshToken}`,
+      JSON.stringify(session),
+      30 * 24 * 60 * 60,
+    );
+
+    return {
+      access_token: this.jwtService.sign(session.payload),
+      refresh_token: newRefreshToken,
+      token_type: 'Bearer',
+      expires_in: '15m',
+    };
+  }
+
+  async logout(refreshToken: string) {
+    await this.redis.del(`refresh:${refreshToken}`);
+  }
+
   /**
    * Enforce Telemedicine + NDPR Consent capture
    */
@@ -306,6 +346,8 @@ export class AuthService {
           data: {
             telemedicine_consent: dto.telemedicine_consent,
             ndpr_consent: dto.ndpr_consent,
+            consent_accepted_at:
+              dto.telemedicine_consent && dto.ndpr_consent ? new Date() : null,
           },
           include: {
             doctor_profile: true,

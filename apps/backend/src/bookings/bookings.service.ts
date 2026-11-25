@@ -5,7 +5,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { BookingStatus, BookingType, PaymentStatus, Role } from '@prisma/client';
+import { BookingStatus, BookingType, PaymentStatus, Role, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TriageService } from '../triage/triage.service';
 import { QueueService } from './queue.service';
@@ -454,5 +454,137 @@ export class BookingsService {
       }
     }
     return slots;
+  }
+
+  /**
+   * Lists VERIFIED doctors/therapists filterable by specialty, language, and availability
+   */
+  async listVerifiedDoctors(filters: {
+    specialty?: string;
+    language?: string;
+    availability?: string;
+  }) {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    const profiles = await this.prisma.doctorProfile.findMany({
+      where: {
+        verification_status: VerificationStatus.VERIFIED,
+        ...(filters.specialty
+          ? { specialty: { contains: filters.specialty, mode: 'insensitive' } }
+          : {}),
+        ...(filters.language ? { languages: { has: filters.language } } : {}),
+        ...(filters.availability === 'online' ? { is_online: true } : {}),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            public_id: true,
+            name: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return profiles;
+  }
+
+  /**
+   * Claims a specific waiting patient (or next FIFO if bookingId === 'next')
+   */
+  async claimSpecificOrNextFromQueue(doctorId: string, bookingId: string) {
+    if (bookingId === 'next') {
+      return this.claimNextFromQueue(doctorId);
+    }
+
+    const status = await this.queueService.getQueueStatus();
+    const target = status.items.find((item) => item.booking_id === bookingId);
+    if (!target) {
+      return this.claimNextFromQueue(doctorId);
+    }
+
+    await this.queueService.removePatient(bookingId);
+
+    let updatedBooking: any = null;
+    if (this.prisma.isConnected) {
+      updatedBooking = await this.prisma.booking.update({
+        where: { id: bookingId },
+        data: { doctor_id: doctorId, status: BookingStatus.CONFIRMED },
+        include: { patient: true, doctor: true },
+      });
+    } else {
+      const mem = this.memoryBookings.get(bookingId);
+      if (mem) {
+        mem.doctor_id = doctorId;
+        mem.status = BookingStatus.CONFIRMED;
+        updatedBooking = mem;
+      } else {
+        updatedBooking = { id: bookingId, doctor_id: doctorId, status: BookingStatus.CONFIRMED };
+      }
+    }
+
+    return {
+      claimed: true,
+      booking: updatedBooking,
+      patient: {
+        id: target.patient_id,
+        name: target.patient_name,
+        phone: target.patient_phone,
+        chief_complaint: target.chief_complaint,
+      },
+    };
+  }
+
+  /**
+   * Cancels an unstarted booking and releases locked calendar slots / queue entries
+   */
+  async cancelBooking(bookingId: string, userId: string, userRole: string) {
+    await this.queueService.removePatient(bookingId);
+
+    if (this.prisma.isConnected) {
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: { slot: true },
+      });
+      if (!booking) {
+        throw new NotFoundException(`Booking ${bookingId} not found`);
+      }
+      if (
+        userRole !== Role.ADMIN &&
+        booking.patient_id !== userId &&
+        booking.doctor_id !== userId
+      ) {
+        throw new ForbiddenException('You are not authorized to cancel this booking');
+      }
+      if (booking.status === BookingStatus.COMPLETED) {
+        throw new BadRequestException('Cannot cancel an already completed booking');
+      }
+
+      if (booking.slot_id) {
+        await this.prisma.availabilitySlot.update({
+          where: { id: booking.slot_id },
+          data: { is_booked: false },
+        });
+      }
+
+      const cancelled = await this.prisma.booking.update({
+        where: { id: bookingId },
+        data: { status: BookingStatus.CANCELLED },
+      });
+      return { success: true, booking: cancelled };
+    }
+
+    const mem = this.memoryBookings.get(bookingId);
+    if (!mem) {
+      throw new NotFoundException(`Booking ${bookingId} not found`);
+    }
+    if (mem.slot_id && this.memorySlots.has(mem.slot_id)) {
+      this.memorySlots.get(mem.slot_id).is_booked = false;
+    }
+    mem.status = BookingStatus.CANCELLED;
+    return { success: true, booking: mem };
   }
 }
