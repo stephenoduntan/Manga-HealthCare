@@ -20,6 +20,10 @@ describe('AppModule DI & Bootstrap Verification', () => {
     expect(moduleRef.get(WebhooksController)).toBeDefined();
     expect(moduleRef.get(ConsultationChatGateway)).toBeDefined();
 
+    const root = moduleRef.get(HealthController).getRootInfo();
+    expect(root.status).toBe('ok');
+    expect(root.docs).toBe('/api/docs');
+
     const health = moduleRef.get(HealthController).getApiHealth();
     expect(health.status).toBe('ok');
     expect(health.service).toBe('manga-healthcare-backend');
