@@ -16,4 +16,22 @@ if (fs.existsSync(apiContractDir) && !fs.existsSync(apiContractDist)) {
   run('pnpm build', apiContractDir);
 }
 
-run('npx prisma generate', backendDir);
+try {
+  run('npx prisma generate', backendDir);
+} catch (err) {
+  let hasGeneratedClient = false;
+  try {
+    require.resolve('.prisma/client', { paths: [backendDir] });
+    hasGeneratedClient = true;
+  } catch {
+    hasGeneratedClient = false;
+  }
+
+  if (process.platform === 'win32' && hasGeneratedClient) {
+    console.warn(
+      '[prepare-build] Prisma engine DLL locked on Windows (likely running dev server); using existing generated @prisma/client.',
+    );
+  } else {
+    throw err;
+  }
+}
