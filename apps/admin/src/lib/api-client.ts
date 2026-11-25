@@ -39,10 +39,28 @@ export function clearAdminSession(): void {
   window.localStorage.removeItem(ADMIN_SESSION_KEY);
 }
 
+export interface AdminApiResponse<T = any> {
+  ok: boolean;
+  status: number;
+  data: T | null;
+  errorMessage?: string;
+  networkError?: boolean;
+}
+
+function extractAdminError(data: any, status: number): string {
+  if (data?.message) {
+    return Array.isArray(data.message) ? data.message.join(', ') : String(data.message);
+  }
+  if (status === 401) return 'Unauthorized staff credentials, OTP, or 2FA code.';
+  if (status === 403) return 'Forbidden: ADMIN role is required.';
+  if (status === 429) return 'Rate limit exceeded. Wait before requesting another OTP.';
+  return `Request failed with status ${status}.`;
+}
+
 export async function adminApiFetch<T = any>(
   path: string,
   init: RequestInit = {},
-): Promise<{ ok: boolean; status: number; data: T | null; networkError?: boolean }> {
+): Promise<AdminApiResponse<T>> {
   const session = getAdminSession();
   const buildHeaders = (token?: string): HeadersInit => ({
     'Content-Type': 'application/json',
@@ -81,8 +99,19 @@ export async function adminApiFetch<T = any>(
     }
 
     const data = await response.json().catch(() => null);
-    return { ok: response.ok, status: response.status, data };
+    return {
+      ok: response.ok,
+      status: response.status,
+      data,
+      ...(!response.ok ? { errorMessage: extractAdminError(data, response.status) } : {}),
+    };
   } catch {
-    return { ok: false, status: 0, data: null, networkError: true };
+    return {
+      ok: false,
+      status: 0,
+      data: null,
+      networkError: true,
+      errorMessage: 'Unable to reach Manga Healthcare API server. Check NEXT_PUBLIC_API_URL or network connectivity.',
+    };
   }
 }

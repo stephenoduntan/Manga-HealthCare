@@ -14,27 +14,55 @@ import { useAuth, UserRole } from '../src/context/AuthContext';
 import { nativeColors, nativeRadii } from '@manga/design-system/native';
 
 export default function MobileAuthScreen() {
-  const { loginWithOtp, isLoading } = useAuth();
+  const { requestOtp, loginWithOtp, isLoading, authError } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'IDENTIFIER' | 'OTP'>('IDENTIFIER');
   const [selectedRole, setSelectedRole] = useState<UserRole>('PATIENT');
   const [telemedConsent, setTelemedConsent] = useState(true);
   const [ndprConsent, setNdprConsent] = useState(true);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isRequesting, setIsRequesting] = useState(false);
 
-  const handleRequestOtp = () => {
-    if (!identifier.trim()) return;
+  const handleRequestOtp = async () => {
+    setLocalError(null);
+    setStatusMessage(null);
+    if (!identifier.trim()) {
+      setLocalError('Phone number, email, or ID is required.');
+      return;
+    }
+    if (!telemedConsent || !ndprConsent) {
+      setLocalError('Telemedicine and NDPR consents are required.');
+      return;
+    }
+
+    setIsRequesting(true);
+    const res = await requestOtp(identifier, selectedRole);
+    setIsRequesting(false);
+
+    if (!res.ok) {
+      setLocalError(res.message || 'Could not dispatch OTP.');
+      return;
+    }
     setStep('OTP');
-    setOtp('482910'); // 6-digit OTP per Sitemap Section 3.1 / 4.1
+    setOtp(res.devOtp || '');
+    setStatusMessage(res.message || `6-digit OTP sent to ${identifier}`);
   };
 
   const handleVerifyOtp = async () => {
-    if (!otp.trim()) return;
+    setLocalError(null);
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setLocalError('Please enter a valid 6-digit OTP code.');
+      return;
+    }
     await loginWithOtp(identifier, otp, selectedRole);
   };
 
   const handleQuickLogin = async (role: UserRole, id: string) => {
-    await loginWithOtp(id, '482910', role);
+    setLocalError(null);
+    const otpReq = await requestOtp(id, role);
+    await loginWithOtp(id, otpReq.devOtp || '123456', role);
   };
 
   return (
@@ -54,6 +82,18 @@ export default function MobileAuthScreen() {
 
         {/* Auth Card */}
         <View style={styles.card}>
+          {(localError || authError) && (
+            <View style={{ backgroundColor: '#ffede8', borderColor: '#ff643b', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+              <Text style={{ color: '#080331', fontSize: 12, fontWeight: '600' }}>
+                {localError || authError}
+              </Text>
+            </View>
+          )}
+          {statusMessage && step === 'OTP' && (
+            <View style={{ backgroundColor: '#e1f4df', borderColor: '#b1dbb8', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+              <Text style={{ color: '#0f3e17', fontSize: 12 }}>{statusMessage}</Text>
+            </View>
+          )}
           <View style={styles.roleSelector}>
             <TouchableOpacity
               style={[styles.roleTab, selectedRole === 'PATIENT' && styles.roleTabActive]}
@@ -139,24 +179,26 @@ export default function MobileAuthScreen() {
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
-                  (!identifier.trim() || !telemedConsent || !ndprConsent) && styles.buttonDisabled,
+                  (!identifier.trim() || !telemedConsent || !ndprConsent || isRequesting) && styles.buttonDisabled,
                 ]}
-                disabled={!identifier.trim() || !telemedConsent || !ndprConsent}
+                disabled={!identifier.trim() || !telemedConsent || !ndprConsent || isRequesting}
                 onPress={handleRequestOtp}
               >
-                <Text style={styles.primaryButtonText}>Send 4-Digit Login OTP</Text>
+                <Text style={styles.primaryButtonText}>
+                  {isRequesting ? 'Sending 6-Digit OTP...' : 'Send 6-Digit Login OTP'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Enter 4-Digit Security OTP</Text>
-              <Text style={styles.helperText}>Sent to {identifier} (Dev OTP: 1234)</Text>
+              <Text style={styles.label}>Enter 6-Digit Security OTP</Text>
+              <Text style={styles.helperText}>Sent to {identifier}</Text>
               <TextInput
                 style={[styles.input, styles.otpInput]}
-                placeholder="1234"
+                placeholder="000000"
                 placeholderTextColor="#747679"
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={6}
                 value={otp}
                 onChangeText={setOtp}
               />

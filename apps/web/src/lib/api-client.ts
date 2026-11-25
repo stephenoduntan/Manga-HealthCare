@@ -73,10 +73,28 @@ async function tryRefreshSession(current: StoredAuthSession): Promise<StoredAuth
   }
 }
 
+export interface ApiResponse<T = any> {
+  ok: boolean;
+  status: number;
+  data: T | null;
+  errorMessage?: string;
+  networkError?: boolean;
+}
+
+function extractErrorMessage(data: any, status: number): string {
+  if (data?.message) {
+    return Array.isArray(data.message) ? data.message.join(', ') : String(data.message);
+  }
+  if (status === 401) return 'Authentication failed. Please check your credentials or OTP.';
+  if (status === 403) return 'Access denied for this role or verification status.';
+  if (status === 429) return 'Too many requests. Please wait before trying again.';
+  return `Request failed with status ${status}.`;
+}
+
 export async function authorizedApiFetch<T = any>(
   path: string,
   init: RequestInit = {},
-): Promise<{ ok: boolean; status: number; data: T | null; networkError?: boolean }> {
+): Promise<ApiResponse<T>> {
   const session = getAuthSession();
   const buildHeaders = (token?: string): HeadersInit => ({
     ...(init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
@@ -103,9 +121,20 @@ export async function authorizedApiFetch<T = any>(
     }
 
     const data = await response.json().catch(() => null);
-    return { ok: response.ok, status: response.status, data };
+    return {
+      ok: response.ok,
+      status: response.status,
+      data,
+      ...(!response.ok ? { errorMessage: extractErrorMessage(data, response.status) } : {}),
+    };
   } catch {
-    return { ok: false, status: 0, data: null, networkError: true };
+    return {
+      ok: false,
+      status: 0,
+      data: null,
+      networkError: true,
+      errorMessage: 'Unable to reach Manga Healthcare API server. Check NEXT_PUBLIC_API_URL or network connectivity.',
+    };
   }
 }
 

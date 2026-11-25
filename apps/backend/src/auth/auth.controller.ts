@@ -24,6 +24,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Get('providers')
+  getAuthProviderStatus() {
+    return this.authService.getProviderStatus();
+  }
+
+  @Public()
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
   async requestOtp(@Body() dto: RequestOtpDto) {

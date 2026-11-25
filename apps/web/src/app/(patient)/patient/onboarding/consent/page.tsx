@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lock, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Lock, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
 import { authorizedApiFetch, getAuthSession, saveAuthSession } from '@/lib/api-client';
 
 export default function PatientConsentPage() {
@@ -11,12 +11,19 @@ export default function PatientConsentPage() {
   const [telemedConsent, setTelemedConsent] = useState(false);
   const [ndprConsent, setNdprConsent] = useState(false);
   const [tosConsent, setTosConsent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canProceed = telemedConsent && ndprConsent && tosConsent;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canProceed) return;
+    setErrorMessage(null);
+    if (!canProceed) {
+      setErrorMessage('All 3 mandatory consents (Telemedicine, NDPR, and Terms) must be checked.');
+      return;
+    }
+    setIsSubmitting(true);
     const res = await authorizedApiFetch('/api/v1/auth/consent', {
       method: 'POST',
       body: JSON.stringify({
@@ -25,8 +32,13 @@ export default function PatientConsentPage() {
         terms_accepted: tosConsent,
       }),
     });
+    setIsSubmitting(false);
+    if (!res.ok) {
+      setErrorMessage(res.errorMessage || 'Failed to record NDPR consent. Please ensure you are signed in.');
+      return;
+    }
     const session = getAuthSession();
-    if (res.ok && session) {
+    if (session) {
       saveAuthSession({
         ...session,
         user: {
@@ -120,20 +132,27 @@ export default function PatientConsentPage() {
           </div>
         </label>
 
+        {errorMessage && (
+          <div className="p-3.5 rounded-2xl bg-[#ffede8] border border-[#ff643b]/40 flex items-start gap-2.5 text-xs text-[#080331]">
+            <AlertCircle className="w-4 h-4 text-[#ff643b] shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <div className="pt-4 flex items-center justify-between">
           <Link href="/patient/auth" className="text-xs font-semibold text-[#747679] hover:text-[#080331]">
             ← Back to Auth
           </Link>
           <button
             type="submit"
-            disabled={!canProceed}
+            disabled={!canProceed || isSubmitting}
             className={`px-7 py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition ${
-              canProceed
+              canProceed && !isSubmitting
                 ? 'bg-[#0a3922] text-white hover:bg-[#0f3e17] shadow-xs'
                 : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
             }`}
           >
-            <span>Accept & Continue to Medical Intake</span>
+            <span>{isSubmitting ? 'Saving Consents...' : 'Accept & Continue to Medical Intake'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

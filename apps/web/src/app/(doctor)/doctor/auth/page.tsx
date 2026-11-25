@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, ArrowRight, Stethoscope } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Stethoscope, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { authorizedApiFetch, saveAuthSession } from '@/lib/api-client';
 
 export default function DoctorAuthPage() {
@@ -12,6 +12,11 @@ export default function DoctorAuthPage() {
   const [identifier, setIdentifier] = useState('LOC-9941');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [verifiedId, setVerifiedId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplyMode, setIsApplyMode] = useState(false);
 
   useEffect(() => {
@@ -25,23 +30,55 @@ export default function DoctorAuthPage() {
 
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier.trim()) return;
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      setErrorMessage('Please enter your Clinical Email, Doctor ID, or Locum ID.');
+      return;
+    }
+    if (authTab === 'EMAIL' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setErrorMessage('Please enter a valid clinical email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
     const role = authTab === 'LOCUM_ID' ? 'LOCUM' : 'DOCTOR';
-    const res = await authorizedApiFetch<{ dev_otp?: string }>('/api/v1/auth/otp/request', {
-      method: 'POST',
-      body: JSON.stringify({
-        identifier: identifier.trim(),
-        role,
-        login_mode: authTab,
-      }),
-    });
+    const res = await authorizedApiFetch<{ message?: string; dev_otp?: string }>(
+      '/api/v1/auth/otp/request',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          identifier: trimmed,
+          role,
+          login_mode: authTab,
+        }),
+      },
+    );
+    setIsSubmitting(false);
+
+    if (!res.ok) {
+      setErrorMessage(res.errorMessage || 'Failed to dispatch clinician OTP.');
+      return;
+    }
+
     setOtpSent(true);
-    setOtpCode(res.data?.dev_otp || '482910');
+    setDevOtpHint(res.data?.dev_otp || null);
+    setOtpCode(res.data?.dev_otp || '');
+    setStatusMessage(res.data?.message || `6-digit OTP sent for ${trimmed}.`);
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.trim().length < 6) return;
+    setErrorMessage(null);
+
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      setErrorMessage('Please enter a valid 6-digit OTP code.');
+      return;
+    }
+
+    setIsSubmitting(true);
     const role = authTab === 'LOCUM_ID' ? 'LOCUM' : 'DOCTOR';
     const res = await authorizedApiFetch('/api/v1/auth/otp/verify', {
       method: 'POST',
@@ -53,14 +90,23 @@ export default function DoctorAuthPage() {
         is_locum: authTab === 'LOCUM_ID',
       }),
     });
-    if (res.ok && res.data?.access_token) {
-      saveAuthSession(res.data);
+    setIsSubmitting(false);
+
+    if (!res.ok || !res.data?.access_token) {
+      setErrorMessage(res.errorMessage || 'Invalid or expired clinician OTP.');
+      return;
     }
-    if (isApplyMode) {
-      router.push('/doctor/onboarding/credentials');
-    } else {
-      router.push('/doctor/dashboard');
-    }
+
+    saveAuthSession(res.data);
+    setVerifiedId(res.data?.user?.public_id || identifier.trim().toUpperCase());
+
+    setTimeout(() => {
+      if (isApplyMode) {
+        router.push('/doctor/onboarding/credentials');
+      } else {
+        router.push('/doctor/dashboard');
+      }
+    }, 600);
   };
 
   return (
@@ -70,7 +116,7 @@ export default function DoctorAuthPage() {
           doctor.mangahealthcare.com/auth
         </span>
         <h1 className="font-serif text-3xl sm:text-4xl text-[#080331] font-normal">
-          Clinician & Locum Portal Sign In
+          Clinician &amp; Locum Portal Sign In
         </h1>
         <p className="text-xs sm:text-sm text-[#747679]">
           MDCN-verified Doctors, Therapists, and Admin-vetted Locum Physicians.
@@ -78,6 +124,13 @@ export default function DoctorAuthPage() {
       </div>
 
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#efeeeb] shadow-[0_12px_28px_rgba(75,68,57,0.08)] space-y-6">
+        {errorMessage && (
+          <div className="p-4 rounded-2xl bg-[#ffede8] border border-[#ff643b]/40 flex items-start gap-3 text-xs text-[#080331]">
+            <AlertCircle className="w-4 h-4 text-[#ff643b] shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2 bg-[#f8f3eb] p-1 rounded-2xl border border-neutral-200">
           <button
             type="button"
@@ -85,6 +138,7 @@ export default function DoctorAuthPage() {
               setAuthTab('EMAIL');
               setIdentifier('chidi.okafor@mangahealth.ng');
               setOtpSent(false);
+              setErrorMessage(null);
             }}
             className={`py-2.5 px-2 rounded-xl text-xs font-semibold transition ${
               authTab === 'EMAIL' ? 'bg-[#0a3922] text-white shadow-xs' : 'text-[#747679]'
@@ -98,6 +152,7 @@ export default function DoctorAuthPage() {
               setAuthTab('DOCTOR_ID');
               setIdentifier('DOC-1102');
               setOtpSent(false);
+              setErrorMessage(null);
             }}
             className={`py-2.5 px-2 rounded-xl text-xs font-semibold transition ${
               authTab === 'DOCTOR_ID' ? 'bg-[#0a3922] text-white shadow-xs' : 'text-[#747679]'
@@ -111,6 +166,7 @@ export default function DoctorAuthPage() {
               setAuthTab('LOCUM_ID');
               setIdentifier('LOC-9941');
               setOtpSent(false);
+              setErrorMessage(null);
             }}
             className={`py-2.5 px-2 rounded-xl text-xs font-semibold transition ${
               authTab === 'LOCUM_ID' ? 'bg-[#0a3922] text-white shadow-xs' : 'text-[#747679]'
@@ -125,10 +181,10 @@ export default function DoctorAuthPage() {
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1.5">
                 {authTab === 'EMAIL'
-                  ? 'Registered Clinical Email'
+                  ? 'Registered Clinical Email *'
                   : authTab === 'DOCTOR_ID'
-                  ? 'Doctor ID (DOC-XXXX)'
-                  : 'Admin-Issued Locum ID (LOC-XXXX)'}
+                  ? 'Doctor ID (DOC-XXXX) *'
+                  : 'Admin-Issued Locum ID (LOC-XXXX) *'}
               </label>
               <input
                 type={authTab === 'EMAIL' ? 'email' : 'text'}
@@ -141,20 +197,25 @@ export default function DoctorAuthPage() {
 
             <button
               type="submit"
-              className="w-full bg-[#0a3922] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-[#0f3e17] transition"
+              disabled={isSubmitting}
+              className="w-full bg-[#0a3922] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-[#0f3e17] transition disabled:opacity-50"
             >
-              Send 6-Digit Clinician OTP
+              {isSubmitting ? 'Sending Clinician OTP...' : 'Send 6-Digit Clinician OTP'}
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4">
-            <div className="p-4 rounded-2xl bg-[#e1f4df] border border-[#b1dbb8] flex items-center justify-between text-xs text-[#0f3e17]">
-              <span>6-digit OTP sent for <strong>{identifier}</strong></span>
-              <span className="font-mono font-bold bg-white px-2.5 py-1 rounded">482910</span>
+            <div className="p-4 rounded-2xl bg-[#e1f4df] border border-[#b1dbb8] flex items-center justify-between gap-2 text-xs text-[#0f3e17]">
+              <span>{statusMessage || `6-digit OTP sent for ${identifier}`}</span>
+              {devOtpHint && (
+                <span className="font-mono font-bold bg-white px-2.5 py-1 rounded shrink-0">
+                  Sandbox OTP: {devOtpHint}
+                </span>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1.5">
-                6-Digit Verification Code
+                6-Digit Verification Code *
               </label>
               <input
                 type="text"
@@ -165,13 +226,33 @@ export default function DoctorAuthPage() {
                 required
               />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-[#ff643b] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition flex items-center justify-center gap-2"
-            >
-              <span>Authenticate & Enter Workspace</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {verifiedId && (
+              <div className="p-3.5 rounded-2xl bg-[#ebf0f8] border border-[#4865ff]/30 flex items-center gap-2 text-xs text-[#080331]">
+                <CheckCircle2 className="w-4 h-4 text-[#31ce01]" />
+                <span>Verified clinician session: <strong>{verifiedId}</strong></span>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => {
+                  setOtpSent(false);
+                  setErrorMessage(null);
+                }}
+                className="px-5 py-3.5 rounded-full border border-neutral-200 text-xs font-semibold text-[#747679]"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 bg-[#ff643b] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <span>{isSubmitting ? 'Authenticating...' : 'Authenticate & Enter Workspace'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </form>
         )}
 

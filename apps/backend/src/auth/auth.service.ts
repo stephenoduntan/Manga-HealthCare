@@ -34,7 +34,30 @@ export class AuthService {
   ) {}
 
   private normalizeIdentifier(raw: string): string {
-    return raw.trim().toLowerCase();
+    const trimmed = raw.trim();
+    if (trimmed.includes('@')) {
+      return trimmed.toLowerCase();
+    }
+    return trimmed.replace(/\s+/g, '').toLowerCase();
+  }
+
+  private normalizePhoneOrId(raw: string): string {
+    return raw.trim().replace(/\s+/g, '');
+  }
+
+  getProviderStatus() {
+    const readiness = this.notifications?.getOtpProviderReadiness() || {
+      sms_otp: { provider: 'termii', configured: false, required_env: ['TERMII_API_KEY'] },
+      email_otp: { provider: 'resend', configured: false, required_env: ['RESEND_API_KEY'] },
+    };
+    return {
+      ...readiness,
+      database_connected: this.prisma.isConnected,
+      mode:
+        readiness.sms_otp.configured || readiness.email_otp.configured
+          ? 'LIVE_WITH_SANDBOX_FALLBACK'
+          : 'SANDBOX_OTP_MODE',
+    };
   }
 
   generatePublicId(role: Role, isLocum = false): string {
@@ -45,8 +68,23 @@ export class AuthService {
    * Request OTP via Phone, Email, or Public ID
    */
   async requestOtp(dto: RequestOtpDto) {
-    const rawIdentifier = dto.identifier.trim();
+    const rawIdentifier = this.normalizePhoneOrId(dto.identifier || '');
+    if (!rawIdentifier) {
+      throw new BadRequestException('Identifier (phone, email, or public ID) is required.');
+    }
+
     const normalized = this.normalizeIdentifier(rawIdentifier);
+    if (dto.login_mode === 'EMAIL' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawIdentifier)) {
+      throw new BadRequestException('Please enter a valid email address.');
+    }
+    if (dto.login_mode === 'PHONE' && rawIdentifier.replace(/[^\d]/g, '').length < 7) {
+      throw new BadRequestException('Please enter a valid mobile phone number.');
+    }
+    if (dto.role === Role.ADMIN && rawIdentifier.includes('@') && !normalized.endsWith('@mangahealthcare.com')) {
+      throw new UnauthorizedException(
+        'Admin access restricted to whitelisted @mangahealthcare.com staff accounts.',
+      );
+    }
 
     // Rate-limit OTP generation in Redis (max 10 attempts per 10 minutes)
     const rateKey = `otp_rate:${normalized}`;
@@ -98,23 +136,32 @@ export class AuthService {
     // Store in Redis/memory with 10 minute TTL (600s)
     await this.redis.set(otpKey, generatedOtp, 600);
 
-    await this.notifications?.dispatchOtp(
+    const delivery = await this.notifications?.dispatchOtp(
       rawIdentifier,
       generatedOtp,
       existingUser?.phone,
       existingUser?.email,
     );
 
+    const liveDelivered = Boolean(delivery?.live_delivered);
     this.logger.log(
-      `[OTP Generated] Identifier: ${rawIdentifier} | OTP: ${generatedOtp} (Expires in 10m)`,
+      `[OTP Generated] Identifier: ${rawIdentifier} | Channel: ${delivery?.channel || 'SANDBOX'} | Live: ${liveDelivered}`,
     );
 
     return {
       success: true,
-      message: 'OTP dispatched successfully. Use the provided code to verify.',
+      message: liveDelivered
+        ? `6-digit verification OTP sent via ${delivery?.provider === 'resend' ? 'Email (Resend)' : 'SMS (Termii)'}.`
+        : 'OTP generated in sandbox mode (configure TERMII_API_KEY / RESEND_API_KEY for live SMS/Email delivery).',
       identifier: rawIdentifier,
       expires_in_seconds: 600,
-      dev_otp: generatedOtp, // Included in response for seamless development & automated testing
+      delivery: delivery || {
+        channel: 'SANDBOX',
+        provider: 'sandbox',
+        provider_configured: false,
+        live_delivered: false,
+      },
+      ...(!liveDelivered || process.env.NODE_ENV !== 'production' ? { dev_otp: generatedOtp } : {}),
     };
   }
 
@@ -122,15 +169,29 @@ export class AuthService {
    * Verify OTP & Login/Register user
    */
   async verifyOtp(dto: VerifyOtpDto) {
-    const rawIdentifier = dto.identifier.trim();
+    const rawIdentifier = this.normalizePhoneOrId(dto.identifier || '');
+    const otpValue = (dto.otp || '').trim();
+    if (!rawIdentifier) {
+      throw new BadRequestException('Identifier is required.');
+    }
+    if (!/^\d{6}$/.test(otpValue)) {
+      throw new UnauthorizedException('Please enter a valid 6-digit OTP code.');
+    }
+
     const normalized = this.normalizeIdentifier(rawIdentifier);
     const otpKey = `otp:${normalized}`;
 
     const storedOtp = await this.redis.get(otpKey);
-    const isValidOtp = (storedOtp && storedOtp === dto.otp) || dto.otp === '123456';
+    const readiness = this.notifications?.getOtpProviderReadiness();
+    const isLiveProductionOtp =
+      process.env.NODE_ENV === 'production' &&
+      Boolean(readiness?.sms_otp.configured || readiness?.email_otp.configured);
+
+    const isValidOtp =
+      (storedOtp && storedOtp === otpValue) || (!isLiveProductionOtp && otpValue === '123456');
 
     if (!isValidOtp) {
-      throw new UnauthorizedException('Invalid or expired OTP code');
+      throw new UnauthorizedException('Invalid or expired OTP code.');
     }
 
     // Remove OTP after verification
@@ -362,6 +423,11 @@ export class AuthService {
    * Enforce Telemedicine + NDPR Consent capture
    */
   async updateConsent(userId: string, dto: ConsentDto) {
+    if (!dto.telemedicine_consent || !dto.ndpr_consent) {
+      throw new BadRequestException(
+        'Both Telemedicine Consent and NDPR Consent must be accepted to continue.',
+      );
+    }
     if (this.prisma.isConnected) {
       try {
         const updated = await this.prisma.user.update({

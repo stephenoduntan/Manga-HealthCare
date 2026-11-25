@@ -19,6 +19,11 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
+  authError: string | null;
+  requestOtp: (
+    identifier: string,
+    role?: UserRole,
+  ) => Promise<{ ok: boolean; devOtp?: string; message?: string }>;
   loginWithOtp: (identifier: string, otp: string, role?: UserRole) => Promise<boolean>;
   logout: () => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
@@ -30,6 +35,8 @@ const AUTH_STORAGE_KEY = 'manga_auth_user_v1';
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
+  authError: null,
+  requestOtp: async () => ({ ok: false }),
   loginWithOtp: async () => false,
   logout: async () => {},
   switchRole: async () => {},
@@ -41,6 +48,7 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Load user from SecureStore on startup
   useEffect(() => {
@@ -60,70 +68,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
+  const requestOtp = async (identifier: string, preferredRole?: UserRole) => {
+    setAuthError(null);
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      setAuthError('Phone number, email, or public ID is required.');
+      return { ok: false, message: 'Identifier is required.' };
+    }
+
+    const apiBase = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${apiBase}/api/v1/auth/otp/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: trimmed, role: preferredRole }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = Array.isArray(data?.message)
+          ? data.message.join(', ')
+          : data?.message || 'Failed to send OTP.';
+        setAuthError(msg);
+        return { ok: false, message: msg };
+      }
+      return { ok: true, devOtp: data?.dev_otp, message: data?.message };
+    } catch {
+      const msg = 'Unable to reach Manga Healthcare API server.';
+      setAuthError(msg);
+      return { ok: false, message: msg };
+    }
+  };
+
   const loginWithOtp = async (identifier: string, otp: string, preferredRole?: UserRole): Promise<boolean> => {
     setIsLoading(true);
+    setAuthError(null);
     try {
       const apiBase = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
-      let apiUser: any = null;
-      let accessToken: string | null = null;
-
-      try {
-        const res = await fetch(`${apiBase}/api/v1/auth/otp/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            identifier: identifier.trim(),
-            otp: otp.trim(),
-            role: preferredRole,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          accessToken = data?.access_token || null;
-          apiUser = data?.user || null;
-        }
-      } catch {
-        // Offline / local preview fallback when backend server is unreachable
+      const res = await fetch(`${apiBase}/api/v1/auth/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: identifier.trim(),
+          otp: otp.trim(),
+          role: preferredRole,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.access_token || !data?.user) {
+        const msg = Array.isArray(data?.message)
+          ? data.message.join(', ')
+          : data?.message || 'Invalid or expired 6-digit OTP.';
+        setAuthError(msg);
+        return false;
       }
 
-      // Determine role from API user, prefix, or parameter
-      let detectedRole: UserRole = (apiUser?.role as UserRole) || preferredRole || 'PATIENT';
-      let publicId = apiUser?.public_id || 'PAT-48291';
-      let name = apiUser?.name || 'Amaka Adeleke';
-
-      const cleanId = identifier.trim().toUpperCase();
-      if (!apiUser) {
-        if (cleanId.startsWith('DOC-') || cleanId.includes('DOCTOR')) {
-          detectedRole = 'DOCTOR';
-          publicId = cleanId.startsWith('DOC-') ? cleanId : 'DOC-1082';
-          name = 'Dr. Chidi Okafor';
-        } else if (cleanId.startsWith('LOC-') || cleanId.includes('LOCUM')) {
-          detectedRole = 'LOCUM';
-          publicId = cleanId.startsWith('LOC-') ? cleanId : 'LOC-9941';
-          name = 'Dr. Amina Bello (Locum)';
-        } else if (cleanId.startsWith('PAT-')) {
-          detectedRole = 'PATIENT';
-          publicId = cleanId;
-          name = 'Amaka Adeleke';
-        }
-      }
-
+      const apiUser = data.user;
       const authUser: AuthUser = {
-        id: apiUser?.id || 'usr-' + Math.random().toString(36).substring(2, 9),
-        publicId,
-        role: detectedRole,
-        name,
-        phone: apiUser?.phone || (identifier.includes('@') ? '+2348030001122' : identifier),
-        email: apiUser?.email || (identifier.includes('@') ? identifier : undefined),
-        telemedicineConsent: apiUser?.telemedicine_consent ?? true,
-        ndprConsent: apiUser?.ndpr_consent ?? true,
-        token: accessToken || 'jwt-mock-session-' + Date.now(),
+        id: apiUser.id,
+        publicId: apiUser.public_id,
+        role: apiUser.role as UserRole,
+        name: apiUser.name,
+        phone: apiUser.phone,
+        email: apiUser.email,
+        telemedicineConsent: Boolean(apiUser.telemedicine_consent),
+        ndprConsent: Boolean(apiUser.ndpr_consent),
+        token: data.access_token,
       };
 
       await SecureStore.setItemAsync(AUTH_STORAGE_KEY, JSON.stringify(authUser));
       setUser(authUser);
 
-      // Route dynamically to patient or doctor navigation shell
       if (authUser.role === 'DOCTOR' || authUser.role === 'LOCUM') {
         router.replace('/(doctor-tabs)');
       } else {
@@ -131,8 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return true;
-    } catch (err) {
-      console.error('Login error:', err);
+    } catch {
+      setAuthError('Unable to reach Manga Healthcare API server. Check EXPO_PUBLIC_API_URL.');
       return false;
     } finally {
       setIsLoading(false);
@@ -201,6 +215,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
+        authError,
+        requestOtp,
         loginWithOtp,
         logout,
         switchRole,

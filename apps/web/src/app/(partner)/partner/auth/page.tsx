@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Building2, Lock, ArrowRight, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { authorizedApiFetch, saveAuthSession } from '@/lib/api-client';
 
 export default function PartnerAuthPage() {
@@ -10,25 +10,58 @@ export default function PartnerAuthPage() {
   const [partnerIdentifier, setPartnerIdentifier] = useState('PRT-MEDPLUS-VI-01');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [verifiedId, setVerifiedId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!partnerIdentifier.trim()) return;
-    const res = await authorizedApiFetch<{ dev_otp?: string }>('/api/v1/auth/otp/request', {
-      method: 'POST',
-      body: JSON.stringify({
-        identifier: partnerIdentifier.trim(),
-        role: 'PARTNER',
-        login_mode: 'PARTNER_ID',
-      }),
-    });
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    const trimmed = partnerIdentifier.trim();
+    if (!trimmed) {
+      setErrorMessage('Partner Organization ID or official email is required.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const res = await authorizedApiFetch<{ message?: string; dev_otp?: string }>(
+      '/api/v1/auth/otp/request',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          identifier: trimmed,
+          role: 'PARTNER',
+          login_mode: 'PARTNER_ID',
+        }),
+      },
+    );
+    setIsSubmitting(false);
+
+    if (!res.ok) {
+      setErrorMessage(res.errorMessage || 'Failed to send Partner OTP.');
+      return;
+    }
+
     setOtpSent(true);
-    setOtpCode(res.data?.dev_otp || '482910');
+    setDevOtpHint(res.data?.dev_otp || null);
+    setOtpCode(res.data?.dev_otp || '');
+    setStatusMessage(res.data?.message || `OTP sent to ${trimmed}.`);
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.trim().length < 6) return;
+    setErrorMessage(null);
+
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      setErrorMessage('Please enter a valid 6-digit OTP code.');
+      return;
+    }
+
+    setIsSubmitting(true);
     const res = await authorizedApiFetch('/api/v1/auth/otp/verify', {
       method: 'POST',
       body: JSON.stringify({
@@ -38,10 +71,16 @@ export default function PartnerAuthPage() {
         login_mode: 'PARTNER_ID',
       }),
     });
-    if (res.ok && res.data?.access_token) {
-      saveAuthSession(res.data);
+    setIsSubmitting(false);
+
+    if (!res.ok || !res.data?.access_token) {
+      setErrorMessage(res.errorMessage || 'Invalid or expired Partner OTP.');
+      return;
     }
-    router.push('/partner/lookup');
+
+    saveAuthSession(res.data);
+    setVerifiedId(res.data?.user?.public_id || partnerIdentifier.trim().toUpperCase());
+    setTimeout(() => router.push('/partner/lookup'), 500);
   };
 
   return (
@@ -55,7 +94,7 @@ export default function PartnerAuthPage() {
             partner.mangahealthcare.com/auth
           </span>
           <h1 className="font-serif text-3xl text-[#080331] font-normal">
-            Pharmacy & Lab Partner Login
+            Pharmacy &amp; Lab Partner Login
           </h1>
           <p className="text-xs text-[#747679]">
             Sign in with your verified Partner Organization ID or official email + 6-digit OTP.
@@ -63,11 +102,18 @@ export default function PartnerAuthPage() {
         </div>
 
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#efeeeb] shadow-[0_12px_28px_rgba(75,68,57,0.08)] space-y-5">
+          {errorMessage && (
+            <div className="p-3.5 rounded-2xl bg-[#ffede8] border border-[#ff643b]/40 flex items-start gap-2.5 text-xs text-[#080331]">
+              <AlertCircle className="w-4 h-4 text-[#ff643b] shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {!otpSent ? (
             <form onSubmit={handleRequestOtp} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1.5">
-                  Partner Organization ID or Email
+                  Partner Organization ID or Email *
                 </label>
                 <div className="relative">
                   <Building2 className="w-4 h-4 text-[#747679] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -83,20 +129,25 @@ export default function PartnerAuthPage() {
 
               <button
                 type="submit"
-                className="w-full bg-[#0a3922] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-[#0f3e17] transition"
+                disabled={isSubmitting}
+                className="w-full bg-[#0a3922] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-[#0f3e17] transition disabled:opacity-50"
               >
-                Send 6-Digit Partner OTP
+                {isSubmitting ? 'Sending Partner OTP...' : 'Send 6-Digit Partner OTP'}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerify} className="space-y-4">
-              <div className="p-3.5 rounded-2xl bg-[#e1f4df] border border-[#b1dbb8] flex items-center justify-between text-xs text-[#0f3e17]">
-                <span>OTP sent to <strong>{partnerIdentifier}</strong></span>
-                <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">482910</span>
+              <div className="p-3.5 rounded-2xl bg-[#e1f4df] border border-[#b1dbb8] flex items-center justify-between gap-2 text-xs text-[#0f3e17]">
+                <span>{statusMessage || `OTP sent to ${partnerIdentifier}`}</span>
+                {devOtpHint && (
+                  <span className="font-mono font-bold bg-white px-2 py-0.5 rounded shrink-0">
+                    Sandbox OTP: {devOtpHint}
+                  </span>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-[#080331] mb-1">
-                  6-Digit Verification OTP
+                  6-Digit Verification OTP *
                 </label>
                 <input
                   type="text"
@@ -107,13 +158,33 @@ export default function PartnerAuthPage() {
                   required
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full bg-[#ff643b] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition flex items-center justify-center gap-2"
-              >
-                <span>Open Order Lookup Counter</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {verifiedId && (
+                <div className="p-3 rounded-2xl bg-[#ebf0f8] border border-[#4865ff]/30 flex items-center gap-2 text-xs text-[#080331]">
+                  <CheckCircle2 className="w-4 h-4 text-[#31ce01]" />
+                  <span>Partner session active: <strong>{verifiedId}</strong></span>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setOtpSent(false);
+                    setErrorMessage(null);
+                  }}
+                  className="px-4 py-3.5 rounded-full border border-neutral-200 text-xs font-semibold text-[#747679]"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-[#ff643b] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:brightness-105 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <span>{isSubmitting ? 'Verifying...' : 'Open Order Lookup Counter'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </form>
           )}
 

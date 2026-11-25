@@ -15,6 +15,7 @@ function isAllowedOrigin(origin: string | undefined, configuredOrigins: string[]
     return (
       hostname === 'mangahealthcare.com' ||
       hostname.endsWith('.mangahealthcare.com') ||
+      hostname.endsWith('.vercel.app') ||
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
       hostname.endsWith('.localhost')
@@ -37,7 +38,7 @@ async function bootstrap() {
     next();
   });
 
-  // Subdomain CORS whitelist
+  // Subdomain & deployment CORS whitelist
   const configuredOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((o) => o.trim())
@@ -52,6 +53,8 @@ async function bootstrap() {
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Triage-Clearance-Token'],
   });
 
   // Global validation pipe

@@ -143,11 +143,13 @@ describe('Backend Architecture Guards, Integrations, Auth Refresh & Partner Fulf
   });
 
   it('AuthService should reject non-@mangahealthcare.com emails for ADMIN login', async () => {
-    const otp = await authService.requestOtp({ identifier: 'intruder@gmail.com', role: Role.ADMIN });
+    await expect(
+      authService.requestOtp({ identifier: 'intruder@gmail.com', role: Role.ADMIN }),
+    ).rejects.toThrow();
     await expect(
       authService.verifyOtp({
         identifier: 'intruder@gmail.com',
-        otp: otp.dev_otp!,
+        otp: '123456',
         role: Role.ADMIN,
         totp_code: '819204',
       }),
@@ -165,5 +167,27 @@ describe('Backend Architecture Guards, Integrations, Auth Refresh & Partner Fulf
     });
     expect(login.access_token).toBeDefined();
     expect(login.user.public_id.startsWith('ADM-')).toBe(true);
+  });
+
+  it('AuthService should report OTP provider readiness and normalize spaced phone numbers', async () => {
+    const status = authService.getProviderStatus();
+    expect(status.sms_otp.provider).toBe('termii');
+    expect(status.email_otp.provider).toBe('resend');
+
+    const otpRes = await authService.requestOtp({
+      identifier: '+234 803 123 4567',
+      role: Role.PATIENT,
+      login_mode: 'PHONE',
+    });
+    expect(otpRes.identifier).toBe('+2348031234567');
+    expect(otpRes.delivery).toBeDefined();
+
+    await expect(
+      authService.verifyOtp({ identifier: '+2348031234567', otp: '12' }),
+    ).rejects.toThrow();
+
+    await expect(
+      authService.updateConsent('user-1', { telemedicine_consent: true, ndpr_consent: false }),
+    ).rejects.toThrow();
   });
 });
